@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LanguageSelector } from "../components/layout/LanguageSelector";
 
 export const Route = createFileRoute("/login")({
@@ -7,13 +7,22 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [emailFormOpen, setEmailFormOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [notice, setNotice] = useState("");
 
   function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("O envio de código ficará disponível em uma próxima etapa.");
+    // DEMO ONLY
+    // Replace with real email OTP flow when authentication is implemented.
+    void navigate({ to: "/home" });
+  }
+
+  function handleFeishuLogin() {
+    // DEMO ONLY
+    // Replace with real Feishu OAuth redirect.
+    void navigate({ to: "/home" });
   }
 
   return (
@@ -33,7 +42,7 @@ function LoginPage() {
           <button
             className="login-button login-button--primary"
             type="button"
-            onClick={() => setNotice("A autenticação Feishu será disponibilizada em uma próxima etapa.")}
+            onClick={handleFeishuLogin}
           >
             <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
               <path

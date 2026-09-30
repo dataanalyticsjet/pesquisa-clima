@@ -1,4 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
+import { SurveyDemoProvider } from "../survey/SurveyDemoContext";
 import { AppHeader } from "./AppHeader";
 
 type AppShellProps = {
@@ -11,11 +12,13 @@ export function AppShell({ children }: AppShellProps) {
   });
 
   return (
-    <>
-      {!isLoginRoute && <AppHeader />}
-      <main className={isLoginRoute ? "login-main" : "app-main"}>
-        {isLoginRoute ? children : <div className="app-main__inner">{children}</div>}
-      </main>
-    </>
+    <SurveyDemoProvider>
+      <>
+        {!isLoginRoute && <AppHeader />}
+        <main className={isLoginRoute ? "login-main" : "app-main"}>
+          {isLoginRoute ? children : <div className="app-main__inner">{children}</div>}
+        </main>
+      </>
+    </SurveyDemoProvider>
   );
 }
