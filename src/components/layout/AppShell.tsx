@@ -1,3 +1,4 @@
+import { useRouterState } from "@tanstack/react-router";
 import { AppHeader } from "./AppHeader";
 
 type AppShellProps = {
@@ -5,11 +6,15 @@ type AppShellProps = {
 };
 
 export function AppShell({ children }: AppShellProps) {
+  const isLoginRoute = useRouterState({
+    select: (state) => state.location.pathname === "/login",
+  });
+
   return (
     <>
-      <AppHeader />
-      <main className="app-main">
-        <div className="app-main__inner">{children}</div>
+      {!isLoginRoute && <AppHeader />}
+      <main className={isLoginRoute ? "login-main" : "app-main"}>
+        {isLoginRoute ? children : <div className="app-main__inner">{children}</div>}
       </main>
     </>
   );
