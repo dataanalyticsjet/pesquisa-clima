@@ -1,0 +1,168 @@
+.app-header {
+  width: 100%;
+  color: var(--color-text-inverse);
+  background: var(--color-brand);
+}
+
+.app-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: min(100%, var(--content-max-width));
+  min-height: 72px;
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-6);
+}
+
+.app-header__identity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app-header__company {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.app-header__product {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.app-header__languages {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: rgb(255 255 255 / 94%);
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-header__language-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-header__language-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 28px;
+  padding-inline: var(--space-2);
+  border: 1px solid rgb(255 255 255 / 78%);
+  border-radius: var(--radius-sm);
+  color: var(--color-brand);
+  background: var(--color-surface);
+  font-weight: 700;
+}
+
+.app-header__language-separator {
+  color: rgb(255 255 255 / 58%);
+}
+
+.app-main {
+  min-height: calc(100vh - 72px);
+  background: var(--color-background);
+}
+
+.app-main__inner {
+  width: min(100%, var(--content-max-width));
+  margin-inline: auto;
+  padding: var(--space-12) var(--space-6);
+}
+
+.welcome-panel {
+  width: min(100%, 1120px);
+  margin: 0;
+  padding: var(--space-8) var(--space-10);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-brand);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.welcome-panel__context {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.welcome-panel__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  line-height: 1.2;
+}
+
+.welcome-panel__description {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.welcome-panel__institutional-copy {
+  max-width: 680px;
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 520px) {
+  .app-header__inner {
+    min-height: 64px;
+    gap: var(--space-2);
+    padding-inline: var(--space-4);
+  }
+
+  .app-header__company {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+  }
+
+  .app-header__product {
+    font-size: 0.86rem;
+  }
+
+  .app-header__languages {
+    gap: 5px;
+    font-size: 0.7rem;
+  }
+
+  .app-header__language-item {
+    gap: 5px;
+  }
+
+  .app-header__language-active {
+    min-width: 28px;
+    min-height: 25px;
+    padding-inline: 5px;
+  }
+
+  .app-main {
+    min-height: calc(100vh - 64px);
+  }
+
+  .app-main__inner {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .welcome-panel {
+    padding: var(--space-6) var(--space-5);
+  }
+}
