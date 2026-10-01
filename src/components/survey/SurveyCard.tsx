@@ -15,6 +15,12 @@ export function SurveyCard({ completed }: { completed: boolean }) {
 
       <h2 className="survey-card__title">{mockSurvey.title}</h2>
       <p className="survey-card__description">{mockSurvey.description}</p>
+      {!completed && (
+        <div className="survey-card__participation">
+          <strong>Participação única</strong>
+          <span>Esta pesquisa pode ser respondida uma única vez.</span>
+        </div>
+      )}
 
       <dl className="survey-card__details">
         <div>

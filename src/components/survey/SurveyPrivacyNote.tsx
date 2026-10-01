@@ -9,7 +9,9 @@ export function SurveyPrivacyNote() {
       </span>
       <div>
         <h2 id="survey-privacy-title">Confidencialidade</h2>
-        <p>A pesquisa é anônima e as respostas serão analisadas de forma consolidada.</p>
+        <p>Seu acesso é utilizado apenas para validar sua participação e impedir respostas duplicadas.</p>
+        <p>Após o envio, sua identidade não será vinculada ao conteúdo das respostas.</p>
+        <p>Os resultados serão analisados de forma consolidada.</p>
       </div>
     </aside>
   );

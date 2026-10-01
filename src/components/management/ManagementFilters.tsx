@@ -49,7 +49,7 @@ export function ManagementFiltersBar() {
         }}><option value="">Todas as bases/unidades</option>{matchingBases.map((base) => <option key={base.id} value={base.id}>{base.name}</option>)}</select></label>
         <label><span>CNPJ / Unidade</span><select value={filters.cnpj} onChange={(event) => setFilter("cnpj", event.target.value)}><option value="">Todos os CNPJs/unidades</option>{cnpjs.map((base) => <option key={base.cnpj} value={base.cnpj}>{base.cnpj} · {base.name}</option>)}</select></label>
       </div>
-      <p className="management-filters__note">Área e unidades são dados fictícios desta demonstração. Resultados exibidos somente de forma consolidada.</p>
+      <p className="management-filters__note">Área e unidades são dados fictícios desta demonstração. Os resultados são consolidados e não permitem identificar respostas individuais.</p>
     </section>
   );
 }

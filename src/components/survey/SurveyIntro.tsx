@@ -15,6 +15,24 @@ export function SurveyIntro({ onStart }: SurveyIntroProps) {
         ))}
       </div>
 
+      <aside className="survey-intro__participation" aria-labelledby="survey-intro-participation-title">
+        <span className="survey-intro__participation-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3.5 19 6v5.3c0 4.4-2.9 7.5-7 9.2-4.1-1.7-7-4.8-7-9.2V6l7-2.5Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+            <path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+          </svg>
+        </span>
+        <div>
+          <h2 id="survey-intro-participation-title">Como protegemos sua participação</h2>
+          <ul>
+            <li>Cada colaborador poderá responder esta pesquisa apenas uma vez.</li>
+            <li>O acesso identifica somente se você já participou.</li>
+            <li>Suas respostas não serão associadas ao seu nome, e-mail ou usuário.</li>
+            <li>Os resultados serão apresentados de forma consolidada.</li>
+          </ul>
+        </div>
+      </aside>
+
       <div className="survey-intro__facts" aria-label="Informações da pesquisa">
         <span><strong>{mockSurvey.questions.length}</strong> perguntas</span>
         <span><strong>{mockSurvey.sections.length}</strong> seções</span>
