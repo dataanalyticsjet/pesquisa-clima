@@ -18,6 +18,7 @@ import { Route as ManagementActionPlansRouteImport } from './routes/management.a
 import { Route as ManagementAdherenceRouteImport } from './routes/management.adherence'
 import { Route as ManagementAttentionRouteImport } from './routes/management.attention'
 import { Route as ManagementPillarsRouteImport } from './routes/management.pillars'
+import { Route as ManagementVoiceRouteImport } from './routes/management.voice'
 import { Route as SurveyClima2026RouteImport } from './routes/survey.clima-2026'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const ManagementPillarsRoute = ManagementPillarsRouteImport.update({
   path: '/pillars',
   getParentRoute: () => ManagementRoute,
 } as any)
+const ManagementVoiceRoute = ManagementVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => ManagementRoute,
+} as any)
 const SurveyClima2026Route = SurveyClima2026RouteImport.update({
   id: '/survey/clima-2026',
   path: '/survey/clima-2026',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
+  '/management/voice': typeof ManagementVoiceRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
   '/management/': typeof ManagementIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
+  '/management/voice': typeof ManagementVoiceRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
   '/management': typeof ManagementIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
+  '/management/voice': typeof ManagementVoiceRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
   '/management/': typeof ManagementIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
+    | '/management/voice'
     | '/survey/clima-2026'
     | '/management/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
+    | '/management/voice'
     | '/survey/clima-2026'
     | '/management'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
+    | '/management/voice'
     | '/survey/clima-2026'
     | '/management/'
   fileRoutesById: FileRoutesById
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementPillarsRouteImport
       parentRoute: typeof ManagementRoute
     }
+    '/management/voice': {
+      id: '/management/voice'
+      path: '/voice'
+      fullPath: '/management/voice'
+      preLoaderRoute: typeof ManagementVoiceRouteImport
+      parentRoute: typeof ManagementRoute
+    }
     '/survey/clima-2026': {
       id: '/survey/clima-2026'
       path: '/survey/clima-2026'
@@ -233,6 +252,7 @@ interface ManagementRouteChildren {
   ManagementAdherenceRoute: typeof ManagementAdherenceRoute
   ManagementAttentionRoute: typeof ManagementAttentionRoute
   ManagementPillarsRoute: typeof ManagementPillarsRoute
+  ManagementVoiceRoute: typeof ManagementVoiceRoute
   ManagementIndexRoute: typeof ManagementIndexRoute
 }
 
@@ -241,6 +261,7 @@ const ManagementRouteChildren: ManagementRouteChildren = {
   ManagementAdherenceRoute: ManagementAdherenceRoute,
   ManagementAttentionRoute: ManagementAttentionRoute,
   ManagementPillarsRoute: ManagementPillarsRoute,
+  ManagementVoiceRoute: ManagementVoiceRoute,
   ManagementIndexRoute: ManagementIndexRoute,
 }
 

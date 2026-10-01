@@ -19,6 +19,7 @@ export function ActionPlanCard({ plan }: { plan: ManagementActionPlan }) {
         </span>
       </div>
       <dl className="action-plan-card__details">
+        <div><dt>Escopo</dt><dd>{plan.scope}</dd></div>
         <div><dt>Problema</dt><dd>{plan.problem}</dd></div>
         <div><dt>Responsável</dt><dd>{plan.owner}</dd></div>
         <div><dt>Prazo</dt><dd>{plan.dueDate}</dd></div>
