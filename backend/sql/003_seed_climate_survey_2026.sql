@@ -93,19 +93,19 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 1, 'Q01', 'SELECT', 'Qual é a sua Regional?', NULL, 'Selecionar Regional', NULL, NULL, 1, 1, 'SEGMENT', 'ORG_REGIONAL'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'IDENTIFICACAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q01');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
 SELECT @survey_id, section.id, 2, 'Q02', 'SELECT', 'Qual é a sua Base/Unidade de atuação?', NULL, 'Selecionar Base/Unidade', NULL, NULL, 1, 2, 'SEGMENT', 'ORG_BASE'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'IDENTIFICACAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q02');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
 SELECT @survey_id, section.id, 3, 'Q03', 'SELECT', 'Em qual CNPJ você está registrado(a)?', 'Essa informação pode ser consultada na sua Carteira de Trabalho Digital.', 'Selecionar CNPJ/Unidade', NULL, NULL, 1, 3, 'SEGMENT', 'ORG_CNPJ'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'IDENTIFICACAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q03');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -116,7 +116,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 4, 'Q04', 'LIKERT', 'Tenho estrutura, ferramentas e recursos adequados para realizar meu trabalho.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q04');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -131,7 +131,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 5, 'Q05', 'LIKERT', 'Os processos internos e a organização do trabalho facilitam a realização das minhas atividades.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q05');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -146,7 +146,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 6, 'Q06', 'MULTIPLE_CHOICE', 'Em relação à estrutura e aos recursos disponíveis para o seu trabalho, o que você considera que precisa ser melhorado?', 'Você pode selecionar mais de uma opção.', NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q06');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -165,7 +165,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 7, 'Q07', 'LIKERT', 'Na maior parte dos dias, consigo realizar minhas atividades dentro da minha jornada normal de trabalho.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'JORNADA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q07');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -180,7 +180,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 8, 'Q08', 'SINGLE_CHOICE', 'Trabalhar além da jornada normal, isso acontece com que frequência?', NULL, NULL, NULL, NULL, 1, 2, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'JORNADA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q08');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -195,7 +195,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 9, 'Q09', 'SINGLE_CHOICE', 'Quando minha jornada de trabalho se estende, qual é o principal motivo?', NULL, NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'JORNADA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q09');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -216,7 +216,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 10, 'Q10', 'SINGLE_CHOICE', 'Na sua opinião, o que mais ajudaria a reduzir situações de jornada excessiva na sua área?', NULL, NULL, NULL, NULL, 1, 4, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'JORNADA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q10');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -236,7 +236,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 11, 'Q11', 'LIKERT', 'Minha liderança me trata com respeito, profissionalismo e imparcialidade.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'LIDERANCA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q11');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -251,7 +251,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 12, 'Q12', 'LIKERT', 'Recebo orientações claras sobre minhas responsabilidades, prioridades e o que é esperado do meu trabalho.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'LIDERANCA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q12');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -266,7 +266,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 13, 'Q13', 'LIKERT', 'Minha liderança compartilha informações importantes e mudanças que impactam meu trabalho.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'LIDERANCA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q13');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -281,7 +281,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 14, 'Q14', 'LIKERT', 'Tenho abertura para procurar minha liderança quando preciso tirar dúvidas, apresentar dificuldades ou pedir orientação.', NULL, NULL, NULL, NULL, 1, 4, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'LIDERANCA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q14');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -296,7 +296,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 15, 'Q15', 'LIKERT', 'Recebo feedbacks constantemente da minha liderança referente o trabalho que realizo.', NULL, NULL, NULL, NULL, 1, 5, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'LIDERANCA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q15');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -311,7 +311,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 16, 'Q16', 'LIKERT', 'Sinto que trabalho em um ambiente respeitoso, colaborativo e com apoio entre as pessoas.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q16');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -326,7 +326,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 17, 'Q17', 'LIKERT', 'Sinto-me seguro(a) física e emocionalmente no meu ambiente de trabalho.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q17');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -341,7 +341,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 18, 'Q18', 'LIKERT', 'Sinto que a empresa mantém um ambiente de trabalho livre de assédio e discriminação.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q18');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -356,7 +356,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 19, 'Q19', 'LIKERT', 'Percebo que as pessoas são tratadas com respeito e justiça, independentemente de suas características pessoais.', NULL, NULL, NULL, NULL, 1, 4, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q19');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -371,7 +371,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 20, 'Q20', 'LIKERT', 'Sinto segurança para expressar opiniões, dúvidas ou dificuldades relacionadas ao meu trabalho.', NULL, NULL, NULL, NULL, 1, 5, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q20');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -386,7 +386,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 21, 'Q21', 'LIKERT', 'Conheço o Canal de Denúncias Benfen e sei como utilizá-lo caso seja necessário.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'ETICA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q21');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -401,7 +401,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 22, 'Q22', 'LIKERT', 'Confio que uma situação relatada pelo Canal de Denúncias Benfen será tratada de forma adequada e imparcial.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'ETICA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q22');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -416,7 +416,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 23, 'Q23', 'LIKERT', 'Sinto segurança para realizar um relato ou denúncia sem medo de sofrer retaliação ou consequências negativas.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'ETICA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q23');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -431,7 +431,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 24, 'Q24', 'LIKERT', 'Percebo que minha liderança atua de forma ética e coerente com as regras da empresa.', NULL, NULL, NULL, NULL, 1, 4, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'ETICA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q24');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -446,7 +446,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 25, 'Q25', 'LIKERT', 'Sinto que meu trabalho e minhas entregas são reconhecidos.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'DESENVOLVIMENTO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q25');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -461,7 +461,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 26, 'Q26', 'LIKERT', 'Consigo visualizar oportunidades de desenvolvimento e crescimento profissional na empresa.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'DESENVOLVIMENTO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q26');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -476,7 +476,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 27, 'Q27', 'LIKERT', 'Considero minha remuneração compatível com minhas atividades e responsabilidades.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'REMUNERACAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q27');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -491,7 +491,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 28, 'Q28', 'LIKERT', 'Considero que os benefícios oferecidos pela empresa atendem às minhas necessidades.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'REMUNERACAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q28');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -506,7 +506,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 29, 'Q29', 'LIKERT', 'Percebo que a empresa se preocupa com a saúde, o bem-estar e as condições de trabalho dos colaboradores.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SAUDE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q29');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -521,7 +521,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 30, 'Q30', 'LIKERT', 'Consigo manter um equilíbrio adequado entre minha vida profissional e pessoal.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SAUDE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q30');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -536,7 +536,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 31, 'Q31', 'LIKERT', 'Sei onde buscar apoio ou orientação dentro da empresa quando enfrento alguma dificuldade relacionada ao trabalho.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SAUDE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q31');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -551,7 +551,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 32, 'Q32', 'LIKERT', 'Os sanitários da unidade são mantidos limpos e em boas condições de higiene.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q32');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -566,7 +566,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 33, 'Q33', 'LIKERT', 'Os sanitários estão conservados e em bom estado de funcionamento.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q33');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -581,7 +581,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 34, 'Q34', 'LIKERT', 'O espaço disponível para realizar as refeições é adequado à quantidade de colaboradores.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q34');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -596,7 +596,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 35, 'Q35', 'LIKERT', 'Os equipamentos disponíveis para apoio às refeições, como micro-ondas e geladeira, são adequados às necessidades dos colaboradores.', NULL, NULL, NULL, NULL, 1, 4, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q35');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -611,7 +611,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 36, 'Q36', 'LIKERT', 'Pretendo continuar trabalhando na J&T Express nos próximos 12 meses.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q36');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -626,7 +626,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 37, 'Q37', 'LIKERT', 'Tenho orgulho de trabalhar na J&T Express.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q37');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -641,7 +641,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 38, 'Q38', 'SINGLE_CHOICE', 'Qual fator que mais poderia influenciar na sua decisão de sair da empresa?', 'Escolha o principal.', NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q38');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -667,7 +667,7 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 39, 'Q39', 'NPS', 'Em uma escala de 0 a 10, o quanto você recomendaria a J&T Express como um bom lugar para trabalhar?', NULL, NULL, 'Não recomendaria', 'Recomendaria com certeza', 1, 1, 'NPS', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERCEPCAO'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q39');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
@@ -688,19 +688,19 @@ INSERT INTO survey_questions (survey_id, section_id, question_number, code, ques
 SELECT @survey_id, section.id, 40, 'Q40', 'TEXTAREA', 'Que mudança ajudaria a organizar melhor a jornada de trabalho na sua área?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 1, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q40');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
 SELECT @survey_id, section.id, 41, 'Q41', 'TEXTAREA', 'O que a empresa poderia melhorar para tornar sua experiência de trabalho melhor?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 2, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q41');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
 SELECT @survey_id, section.id, 42, 'Q42', 'SHORT_TEXT', 'O que você mais valoriza em trabalhar na J&T Express?', 'Responda em uma palavra. Opcional.', 'Uma palavra (opcional)', NULL, NULL, 0, 3, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
+ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q42');
 -- Dynamic Q1/Q2/Q3 organization catalog values are intentionally not inserted by this official seed.
 -- Only Q3's fixed "Não sei informar" option is seeded; no demo CNPJ values are included.
