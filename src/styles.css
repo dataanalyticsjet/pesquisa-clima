@@ -2,6 +2,7 @@
 @import "./styles/layout.css";
 @import "./styles/login.css";
 @import "./styles/survey.css";
+@import "./styles/management.css";
 
 * {
   box-sizing: border-box;

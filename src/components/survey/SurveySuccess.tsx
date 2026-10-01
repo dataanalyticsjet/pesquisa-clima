@@ -11,10 +11,7 @@ export function SurveySuccess() {
       </span>
       <p className="survey-section-eyebrow">Participação concluída</p>
       <h1 id="survey-success-title">Pesquisa enviada</h1>
-      <p className="survey-success__thanks">Obrigado por compartilhar sua opinião.</p>
-      <p className="survey-success__description">
-        Sua participação ajuda a identificar oportunidades de melhoria no nosso ambiente de trabalho.
-      </p>
+      <p className="survey-success__thanks">Obrigada por participar!</p>
       <Link className="survey-button survey-button--primary" to="/home">
         Voltar ao início
       </Link>

@@ -2,8 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { mockSurvey } from "../../data/mockSurvey";
 
 export function SurveyCard({ completed }: { completed: boolean }) {
-  const questionCount = mockSurvey.pillars.reduce((count, pillar) => count + pillar.questions.length, 0);
-
+  const questionCount = mockSurvey.questions.length;
   return (
     <article className={`survey-card${completed ? " survey-card--completed" : ""}`}>
       <div className="survey-card__topline">
@@ -23,12 +22,8 @@ export function SurveyCard({ completed }: { completed: boolean }) {
           <dd>{questionCount}</dd>
         </div>
         <div>
-          <dt>Pilares</dt>
-          <dd>{mockSurvey.pillars.length}</dd>
-        </div>
-        <div>
-          <dt>Tempo estimado</dt>
-          <dd>{mockSurvey.estimatedTimeMinutes} minutos</dd>
+          <dt>Seções</dt>
+          <dd>{mockSurvey.sections.length}</dd>
         </div>
       </dl>
 

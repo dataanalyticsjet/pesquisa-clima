@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { mockSurvey } from "../../data/mockSurvey";
 import { useSurveyDemo } from "./SurveyDemoContext";
-import { PillarProgress } from "./PillarProgress";
+import { SectionProgress } from "./SectionProgress";
 import { QuestionCard } from "./QuestionCard";
 import { SubmitConfirmationDialog } from "./SubmitConfirmationDialog";
 import { SurveyIntro } from "./SurveyIntro";
@@ -10,9 +10,11 @@ import { SurveyProgress } from "./SurveyProgress";
 import { SurveyReview } from "./SurveyReview";
 import { SurveySuccess } from "./SurveySuccess";
 
-const questions = mockSurvey.pillars.flatMap((pillar, pillarIndex) =>
-  pillar.questions.map((question) => ({ ...question, pillarIndex })),
-);
+const questions = mockSurvey.questions;
+
+function hasAnswer(value: unknown) {
+  return typeof value === "number" || (typeof value === "string" && value.trim().length > 0) || (Array.isArray(value) && value.length > 0);
+}
 
 export function SurveyFlow() {
   const {
@@ -28,9 +30,9 @@ export function SurveyFlow() {
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const currentQuestion = questions[currentQuestionIndex];
   const questionCount = questions.length;
-  const answeredCount = questions.filter((question) => answers[question.id] !== undefined).length;
+  const answeredCount = questions.filter((question) => hasAnswer(answers[question.id])).length;
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
-  const canReview = answeredCount === questionCount;
+  const canReview = questions.filter((question) => question.required).every((question) => hasAnswer(answers[question.id]));
 
   function goBack() {
     if (currentQuestionIndex === 0) {
@@ -41,7 +43,7 @@ export function SurveyFlow() {
   }
 
   function goForward() {
-    if (currentAnswer === undefined) return;
+    if (currentQuestion.required && !hasAnswer(currentAnswer)) return;
     if (currentQuestionIndex < questionCount - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       return;
@@ -49,8 +51,9 @@ export function SurveyFlow() {
     if (canReview) setStep("review");
   }
 
-  function editPillar(pillarIndex: number) {
-    const firstQuestionIndex = questions.findIndex((question) => question.pillarIndex === pillarIndex);
+  function editSection(sectionIndex: number) {
+    const sectionId = mockSurvey.sections[sectionIndex]?.id;
+    const firstQuestionIndex = questions.findIndex((question) => question.sectionId === sectionId);
     if (firstQuestionIndex >= 0) setCurrentQuestionIndex(firstQuestionIndex);
     setStep("questions");
   }
@@ -80,7 +83,7 @@ export function SurveyFlow() {
         <div className="survey-flow__title-row">
           <div>
             <p className="survey-section-eyebrow">Pesquisa do colaborador</p>
-            <h1>{mockSurvey.title}</h1>
+            {step !== "intro" && <h1>{mockSurvey.title}</h1>}
           </div>
           <span className="survey-demo-label">Demonstração</span>
         </div>
@@ -93,18 +96,12 @@ export function SurveyFlow() {
       {step === "questions" && currentQuestion && (
         <div className="survey-question-stage">
           <SurveyProgress answeredCount={answeredCount} totalCount={questionCount} />
-          <div className="survey-pillar-context">
-            <PillarProgress answers={answers} currentPillarIndex={currentQuestion.pillarIndex} />
-            <div className="survey-pillar-context__current">
-              <span>Pilar {currentQuestion.pillarIndex + 1} de {mockSurvey.pillars.length}</span>
-              <strong>{mockSurvey.pillars[currentQuestion.pillarIndex].name}</strong>
-            </div>
-          </div>
+          <SectionProgress answers={answers} currentSectionIndex={mockSurvey.sections.findIndex((section) => section.id === currentQuestion.sectionId)} />
 
           <QuestionCard
             onAnswer={(value) => setAnswer(currentQuestion.id, value)}
             question={currentQuestion}
-            questionNumber={currentQuestionIndex + 1}
+            questionNumber={currentQuestion.number}
             selectedValue={currentAnswer}
             totalQuestions={questionCount}
           />
@@ -114,11 +111,11 @@ export function SurveyFlow() {
               Voltar
             </button>
             {currentQuestionIndex === questionCount - 1 ? (
-              <button className="survey-button survey-button--primary" disabled={currentAnswer === undefined || !canReview} onClick={goForward} type="button">
+              <button className="survey-button survey-button--primary" disabled={(currentQuestion.required && !hasAnswer(currentAnswer)) || !canReview} onClick={goForward} type="button">
                 Revisar respostas
               </button>
             ) : (
-              <button className="survey-button survey-button--primary" disabled={currentAnswer === undefined} onClick={goForward} type="button">
+              <button className="survey-button survey-button--primary" disabled={currentQuestion.required && !hasAnswer(currentAnswer)} onClick={goForward} type="button">
                 Próxima
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
@@ -132,8 +129,7 @@ export function SurveyFlow() {
       {step === "review" && (
         <div className="survey-review-stage">
           <SurveyProgress answeredCount={answeredCount} totalCount={questionCount} />
-          <PillarProgress answers={answers} currentPillarIndex={null} />
-          <SurveyReview answers={answers} onEditPillar={editPillar} />
+          <SurveyReview answers={answers} onEditSection={editSection} />
           <div className="survey-review-stage__actions">
             <button className="survey-button survey-button--secondary" onClick={() => {
               setCurrentQuestionIndex(questionCount - 1);

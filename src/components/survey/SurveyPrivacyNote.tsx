@@ -8,9 +8,8 @@ export function SurveyPrivacyNote() {
         </svg>
       </span>
       <div>
-        <h2 id="survey-privacy-title">Sua privacidade é importante</h2>
-        <p>Sua identidade é utilizada apenas para controle de acesso e participação.</p>
-        <p>O conteúdo das suas respostas não será associado ao seu nome ou e-mail.</p>
+        <h2 id="survey-privacy-title">Confidencialidade</h2>
+        <p>A pesquisa é anônima e as respostas serão analisadas de forma consolidada.</p>
       </div>
     </aside>
   );

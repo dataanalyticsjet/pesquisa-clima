@@ -12,6 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ManagementRouteImport } from './routes/management'
+import { Route as ManagementIndexRouteImport } from './routes/management.index'
+import { Route as ManagementActionPlansRouteImport } from './routes/management.action-plans'
+import { Route as ManagementAdherenceRouteImport } from './routes/management.adherence'
+import { Route as ManagementAttentionRouteImport } from './routes/management.attention'
+import { Route as ManagementPillarsRouteImport } from './routes/management.pillars'
 import { Route as SurveyClima2026RouteImport } from './routes/survey.clima-2026'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +35,36 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementRoute = ManagementRouteImport.update({
+  id: '/management',
+  path: '/management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagementIndexRoute = ManagementIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ManagementRoute,
+} as any)
+const ManagementActionPlansRoute = ManagementActionPlansRouteImport.update({
+  id: '/action-plans',
+  path: '/action-plans',
+  getParentRoute: () => ManagementRoute,
+} as any)
+const ManagementAdherenceRoute = ManagementAdherenceRouteImport.update({
+  id: '/adherence',
+  path: '/adherence',
+  getParentRoute: () => ManagementRoute,
+} as any)
+const ManagementAttentionRoute = ManagementAttentionRouteImport.update({
+  id: '/attention',
+  path: '/attention',
+  getParentRoute: () => ManagementRoute,
+} as any)
+const ManagementPillarsRoute = ManagementPillarsRouteImport.update({
+  id: '/pillars',
+  path: '/pillars',
+  getParentRoute: () => ManagementRoute,
+} as any)
 const SurveyClima2026Route = SurveyClima2026RouteImport.update({
   id: '/survey/clima-2026',
   path: '/survey/clima-2026',
@@ -39,33 +75,81 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/management': typeof ManagementRouteWithChildren
+  '/management/action-plans': typeof ManagementActionPlansRoute
+  '/management/adherence': typeof ManagementAdherenceRoute
+  '/management/attention': typeof ManagementAttentionRoute
+  '/management/pillars': typeof ManagementPillarsRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
+  '/management/': typeof ManagementIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/management/action-plans': typeof ManagementActionPlansRoute
+  '/management/adherence': typeof ManagementAdherenceRoute
+  '/management/attention': typeof ManagementAttentionRoute
+  '/management/pillars': typeof ManagementPillarsRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
+  '/management': typeof ManagementIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/management': typeof ManagementRouteWithChildren
+  '/management/action-plans': typeof ManagementActionPlansRoute
+  '/management/adherence': typeof ManagementAdherenceRoute
+  '/management/attention': typeof ManagementAttentionRoute
+  '/management/pillars': typeof ManagementPillarsRoute
   '/survey/clima-2026': typeof SurveyClima2026Route
+  '/management/': typeof ManagementIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/home' | '/login' | '/survey/clima-2026'
+  fullPaths:
+    | '/'
+    | '/home'
+    | '/login'
+    | '/management'
+    | '/management/action-plans'
+    | '/management/adherence'
+    | '/management/attention'
+    | '/management/pillars'
+    | '/survey/clima-2026'
+    | '/management/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/login' | '/survey/clima-2026'
-  id: '__root__' | '/' | '/home' | '/login' | '/survey/clima-2026'
+  to:
+    | '/'
+    | '/home'
+    | '/login'
+    | '/management/action-plans'
+    | '/management/adherence'
+    | '/management/attention'
+    | '/management/pillars'
+    | '/survey/clima-2026'
+    | '/management'
+  id:
+    | '__root__'
+    | '/'
+    | '/home'
+    | '/login'
+    | '/management'
+    | '/management/action-plans'
+    | '/management/adherence'
+    | '/management/attention'
+    | '/management/pillars'
+    | '/survey/clima-2026'
+    | '/management/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
+  ManagementRoute: typeof ManagementRouteWithChildren
   SurveyClima2026Route: typeof SurveyClima2026Route
 }
 
@@ -92,6 +176,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management': {
+      id: '/management'
+      path: '/management'
+      fullPath: '/management'
+      preLoaderRoute: typeof ManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management/': {
+      id: '/management/'
+      path: '/'
+      fullPath: '/management/'
+      preLoaderRoute: typeof ManagementIndexRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/action-plans': {
+      id: '/management/action-plans'
+      path: '/action-plans'
+      fullPath: '/management/action-plans'
+      preLoaderRoute: typeof ManagementActionPlansRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/adherence': {
+      id: '/management/adherence'
+      path: '/adherence'
+      fullPath: '/management/adherence'
+      preLoaderRoute: typeof ManagementAdherenceRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/attention': {
+      id: '/management/attention'
+      path: '/attention'
+      fullPath: '/management/attention'
+      preLoaderRoute: typeof ManagementAttentionRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/pillars': {
+      id: '/management/pillars'
+      path: '/pillars'
+      fullPath: '/management/pillars'
+      preLoaderRoute: typeof ManagementPillarsRouteImport
+      parentRoute: typeof ManagementRoute
+    }
     '/survey/clima-2026': {
       id: '/survey/clima-2026'
       path: '/survey/clima-2026'
@@ -102,10 +228,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ManagementRouteChildren {
+  ManagementActionPlansRoute: typeof ManagementActionPlansRoute
+  ManagementAdherenceRoute: typeof ManagementAdherenceRoute
+  ManagementAttentionRoute: typeof ManagementAttentionRoute
+  ManagementPillarsRoute: typeof ManagementPillarsRoute
+  ManagementIndexRoute: typeof ManagementIndexRoute
+}
+
+const ManagementRouteChildren: ManagementRouteChildren = {
+  ManagementActionPlansRoute: ManagementActionPlansRoute,
+  ManagementAdherenceRoute: ManagementAdherenceRoute,
+  ManagementAttentionRoute: ManagementAttentionRoute,
+  ManagementPillarsRoute: ManagementPillarsRoute,
+  ManagementIndexRoute: ManagementIndexRoute,
+}
+
+const ManagementRouteWithChildren = ManagementRoute._addFileChildren(
+  ManagementRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
+  ManagementRoute: ManagementRouteWithChildren,
   SurveyClima2026Route: SurveyClima2026Route,
 }
 export const routeTree = rootRouteImport

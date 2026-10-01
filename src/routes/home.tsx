@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SurveyCard } from "../components/survey/SurveyCard";
 import { SurveyPrivacyNote } from "../components/survey/SurveyPrivacyNote";
 import { useSurveyDemo } from "../components/survey/SurveyDemoContext";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/home")({
   component: CollaboratorHome,
@@ -22,6 +23,12 @@ function CollaboratorHome() {
         <SurveyCard completed={isCompleted} />
         <SurveyPrivacyNote />
       </div>
+
+      {/* DEMO ONLY
+      Remove when real roles are implemented. */}
+      <Link className="employee-home__management-link" to="/management">
+        Visão Gestão (demo)
+      </Link>
     </div>
   );
 }
