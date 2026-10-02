@@ -699,9 +699,16 @@
 .voice-answer-card h2 { margin: var(--space-2) 0 var(--space-4); font-size: 1rem; line-height: 1.45; }
 .voice-answer-card ul { display: grid; gap: var(--space-3); margin: 0 0 var(--space-4); padding: 0; list-style: none; }
 .voice-answer-card li { padding: var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-secondary); color: var(--color-text-secondary); font-size: .86rem; line-height: 1.55; }
-.voice-word-cloud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); min-height: 140px; padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
-.voice-word-cloud span { display: inline-flex; align-items: baseline; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: 999px; background: var(--color-brand-soft); color: var(--color-text-primary); font-weight: 650; }
-.voice-word-cloud small { color: var(--color-text-muted); font-size: .65rem; }
+.voice-answer-card__privacy { margin: calc(var(--space-3) * -1) 0 var(--space-4); color: var(--color-text-muted); font-size: .75rem; line-height: 1.45; }
+.voice-comment-list li { overflow-wrap: anywhere; white-space: pre-wrap; }
+.management-voice-state { margin: 0; color: var(--color-text-secondary); font-size: .9rem; line-height: 1.5; }
+.management-voice-state--suppressed { display: grid; gap: var(--space-1); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.management-voice-state--suppressed strong { color: var(--color-text-primary); }
+.management-voice-state--suppressed span { color: var(--color-text-secondary); font-size: .82rem; }
+.voice-terms-section { margin-top: var(--space-5); }
+.voice-terms-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.voice-terms-list li { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-secondary); }
+.voice-terms-list strong { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) {
   .management-nps-card { grid-template-columns: 1fr; }
   .management-nps-card > .management-demo-note { grid-column: auto; }

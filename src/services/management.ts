@@ -64,6 +64,36 @@ export type ManagementAttentionResponse = {
   regionals: ManagementAttentionRegional[];
 };
 
+export type ManagementVoiceQuestionBase = {
+  question_code: string;
+  question_text: string;
+  question_type: string;
+  analytics_available: boolean;
+  respondent_count: number | null;
+};
+
+export type ManagementVoiceCommentsQuestion = ManagementVoiceQuestionBase & {
+  question_code: "Q40" | "Q41";
+  comments: string[];
+};
+
+export type ManagementVoiceTerm = {
+  term: string;
+  count: number;
+};
+
+export type ManagementVoiceTermsQuestion = ManagementVoiceQuestionBase & {
+  question_code: "Q42";
+  terms: ManagementVoiceTerm[];
+};
+
+export type ManagementVoiceResponse = {
+  survey_code: string;
+  survey_status: string;
+  min_group_size: number;
+  questions: (ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion)[];
+};
+
 export function getManagementPillars(surveyCode: string) {
   return apiRequest<ManagementPillarsResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/pillars`,
@@ -79,5 +109,11 @@ export function getManagementOverview(surveyCode: string) {
 export function getManagementAttention(surveyCode: string) {
   return apiRequest<ManagementAttentionResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/attention`,
+  );
+}
+
+export function getManagementVoice(surveyCode: string) {
+  return apiRequest<ManagementVoiceResponse>(
+    `/api/management/surveys/${encodeURIComponent(surveyCode)}/voice`,
   );
 }
