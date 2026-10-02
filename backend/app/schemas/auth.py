@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuthenticatedUserResponse(BaseModel):
@@ -18,6 +18,28 @@ class AuthMeResponse(BaseModel):
 
 
 class LogoutResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    authenticated: bool
+
+
+class ExternalCodeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+
+
+class ExternalCodeVerifyRequest(ExternalCodeRequest):
+    code: str = Field(pattern=r"^[0-9]{6}$")
+
+
+class ExternalCodeRequestResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str
+
+
+class ExternalCodeVerifyResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     authenticated: bool

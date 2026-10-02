@@ -16,6 +16,7 @@ if not session_secret:
     if settings.app_env.lower() not in {"development", "dev", "local"}:
         raise RuntimeError("SESSION_SECRET must be configured outside local development")
     session_secret = secrets.token_urlsafe(48)
+settings.session_secret = session_secret
 
 app = FastAPI(
     title=settings.app_name,

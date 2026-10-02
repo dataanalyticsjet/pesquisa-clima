@@ -1,16 +1,21 @@
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.identity import Role, User, UserRole
 
 
-def get_user_by_email(session: Session, email: str) -> User | None:
-    return session.scalar(select(User).where(User.email == email))
+def get_user_by_email(session: Session, email: str, *, for_update: bool = False) -> User | None:
+    statement = select(User).where(User.email == email)
+    if for_update:
+        statement = statement.with_for_update()
+    return session.scalar(statement)
 
 
 def get_users_by_feishu_ids(
     session: Session, open_id: str | None, union_id: str | None
 ) -> list[User]:
+    from sqlalchemy import or_
+
     checks = []
     if open_id:
         checks.append(User.feishu_open_id == open_id)
@@ -41,6 +46,13 @@ def add_user(session: Session, *, email: str, name: str, open_id: str | None, un
         feishu_open_id=open_id,
         feishu_union_id=union_id,
     )
+    session.add(user)
+    session.flush()
+    return user
+
+
+def add_external_user(session: Session, *, email: str, name: str = "Usuário externo") -> User:
+    user = User(email=email, name=name, access_type="EXTERNAL", status="ACTIVE")
     session.add(user)
     session.flush()
     return user

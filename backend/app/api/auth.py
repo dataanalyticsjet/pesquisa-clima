@@ -2,7 +2,7 @@ import secrets
 import time
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,20 @@ from app.core.auth import get_current_user, get_db_session
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.repositories.identity_repository import get_user_roles
-from app.schemas.auth import AuthMeResponse, LogoutResponse
+from app.schemas.auth import (
+    AuthMeResponse,
+    ExternalCodeRequest,
+    ExternalCodeRequestResponse,
+    ExternalCodeVerifyRequest,
+    ExternalCodeVerifyResponse,
+    LogoutResponse,
+)
+from app.services.external_auth_service import (
+    GENERIC_REQUEST_MESSAGE,
+    ExternalAuthError,
+    request_external_login_code,
+    verify_external_login_code,
+)
 from app.services.feishu_oauth import FeishuOAuthClient, FeishuTokenExchangeError, FeishuUserInfoError
 from app.services.identity_service import AuthFlowError, provision_internal_user
 
@@ -110,6 +123,45 @@ def feishu_callback(request: Request, code: str | None = None, state: str | None
     request.session.clear()
     request.session["user_id"] = user_id
     return _frontend_redirect()
+
+
+@router.post("/external/request-code", response_model=ExternalCodeRequestResponse)
+def request_external_code(
+    body: ExternalCodeRequest,
+    session: Session = Depends(get_db_session),
+):
+    try:
+        request_external_login_code(session, body.email)
+    except ExternalAuthError as error:
+        if error.code == "invalid_email":
+            raise HTTPException(status_code=422, detail="INVALID_EMAIL") from None
+        raise HTTPException(status_code=503, detail="EXTERNAL_AUTH_UNAVAILABLE") from None
+    return {"message": GENERIC_REQUEST_MESSAGE}
+
+
+@router.post("/external/verify-code", response_model=ExternalCodeVerifyResponse)
+def verify_external_code(
+    body: ExternalCodeVerifyRequest,
+    request: Request,
+    session: Session = Depends(get_db_session),
+):
+    try:
+        user = verify_external_login_code(session, body.email, body.code)
+    except ExternalAuthError as error:
+        errors = {
+            "invalid_email": (422, "INVALID_EMAIL"),
+            "invalid_code": (400, "INVALID_CODE"),
+            "expired_code": (400, "CODE_EXPIRED"),
+            "user_inactive": (403, "ACCESS_UNAVAILABLE"),
+            "identity_conflict": (409, "IDENTITY_CONFLICT"),
+            "external_auth_unavailable": (503, "EXTERNAL_AUTH_UNAVAILABLE"),
+        }
+        status_code, detail = errors.get(error.code, (400, "INVALID_CODE"))
+        raise HTTPException(status_code=status_code, detail=detail) from None
+
+    request.session.clear()
+    request.session["user_id"] = user.id
+    return {"authenticated": True}
 
 
 @router.get("/me", response_model=AuthMeResponse)
