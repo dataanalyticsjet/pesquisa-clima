@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_db_session
@@ -14,7 +16,26 @@ from app.services.survey_submission_service import SurveySubmissionError, submit
 from app.services.survey_service import SurveyNotActiveError, get_survey_definition
 
 
-router = APIRouter(prefix="/api/surveys", tags=["surveys"])
+class SurveySubmissionRoute(APIRoute):
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+        if "POST" not in self.methods or not self.path.endswith("/{survey_code}/responses"):
+            return handler
+
+        async def safe_submission_handler(request: Request):
+            try:
+                return await handler(request)
+            except RequestValidationError:
+                # Pydantic's default error includes raw input. Never echo submission content.
+                raise HTTPException(
+                    status_code=422,
+                    detail={"code": "INVALID_ANSWER", "reason": "INVALID_REQUEST_FORMAT"},
+                ) from None
+
+        return safe_submission_handler
+
+
+router = APIRouter(prefix="/api/surveys", tags=["surveys"], route_class=SurveySubmissionRoute)
 
 
 @router.get("/{survey_code}", response_model=SurveyDefinitionResponse)
@@ -75,4 +96,10 @@ def submit_survey_responses(
         return submit_survey(session, survey_code, user.id, body)
     except SurveySubmissionError as error:
         status_code = status_by_error.get(error.code, 503)
-        raise HTTPException(status_code=status_code, detail=error.code) from None
+        if error.reason is None:
+            detail = error.code
+        else:
+            detail = {"code": error.code, "reason": error.reason}
+            if error.question_code is not None:
+                detail["question_code"] = error.question_code
+        raise HTTPException(status_code=status_code, detail=detail) from None

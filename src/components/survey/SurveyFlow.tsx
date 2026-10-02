@@ -59,6 +59,7 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [submitErrorQuestionCode, setSubmitErrorQuestionCode] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<"ready" | "success" | "completed">("ready");
   const questions = survey.questions;
   const currentQuestion = questions[currentQuestionIndex];
@@ -105,19 +106,26 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
     if (submitting || !canReview) return;
     setSubmitting(true);
     setSubmitError("");
+    setSubmitErrorQuestionCode(null);
     try {
       await submitSurveyResponses(survey.code, toSubmissionAnswers(survey, answers));
       setConfirming(false);
       setSubmitState("success");
       void getParticipationStatus(survey.code).catch(() => undefined);
     } catch (error) {
+      setConfirming(false);
       if (error instanceof ApiError && error.status === 409 && error.code === "SURVEY_ALREADY_COMPLETED") {
-        setConfirming(false);
         setSubmitState("completed");
       } else if (error instanceof ApiError && error.status === 409 && error.code === "SURVEY_NOT_ACTIVE") {
         setSubmitError("Esta pesquisa ainda não está aberta para envio. Suas respostas não foram enviadas.");
       } else if (error instanceof ApiError && error.status === 422) {
-        setSubmitError("Não foi possível validar as respostas. Confira o CNPJ e as opções selecionadas e tente novamente.");
+        const rejectedQuestion = questions.find((question) => question.id === error.questionCode);
+        if (rejectedQuestion) {
+          setSubmitError(`Não foi possível validar a resposta da pergunta ${rejectedQuestion.id}.`);
+          setSubmitErrorQuestionCode(rejectedQuestion.id);
+        } else {
+          setSubmitError("Não foi possível validar as respostas. Confira o CNPJ e as opções selecionadas e tente novamente.");
+        }
       } else {
         setSubmitError("Não foi possível enviar as respostas agora. Tente novamente mais tarde.");
       }
@@ -147,6 +155,15 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
     setStep("questions");
   }
 
+  function returnToRejectedQuestion() {
+    const questionIndex = questions.findIndex((question) => question.id === submitErrorQuestionCode);
+    if (questionIndex < 0) return;
+    setCurrentQuestionIndex(questionIndex);
+    setStep("questions");
+    setSubmitError("");
+    setSubmitErrorQuestionCode(null);
+  }
+
   const currentOptions = currentQuestion?.optionSource === "ORG_REGIONAL" ? regionals : currentQuestion?.optionSource === "ORG_BASE" ? serviceCenters : undefined;
   const optionsLoading = currentQuestion?.optionSource === "ORG_REGIONAL" ? regionalLoading : currentQuestion?.optionSource === "ORG_BASE" ? serviceCentersLoading : false;
   const optionsError = currentQuestion?.optionSource === "ORG_REGIONAL" ? regionalError : currentQuestion?.optionSource === "ORG_BASE" ? serviceCentersError : "";
@@ -172,9 +189,10 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
         <SurveyProgress answeredCount={answeredCount} totalCount={questionCount} />
         <SurveyReview answers={answers} onEditSection={editSection} survey={survey} />
         {submitError && <p className="survey-submit-error" role="alert">{submitError}</p>}
+        {submitErrorQuestionCode && <button className="survey-button survey-button--secondary" onClick={returnToRejectedQuestion} type="button">Voltar à pergunta {submitErrorQuestionCode}</button>}
         <div className="survey-review-stage__actions">
           <button className="survey-button survey-button--secondary" onClick={() => { setCurrentQuestionIndex(questionCount - 1); setStep("questions"); }} type="button">Voltar às perguntas</button>
-          <button className="survey-button survey-button--primary" disabled={!canReview || submitting} onClick={() => { setSubmitError(""); setConfirming(true); }} type="button">Enviar respostas</button>
+          <button className="survey-button survey-button--primary" disabled={!canReview || submitting} onClick={() => { setSubmitError(""); setSubmitErrorQuestionCode(null); setConfirming(true); }} type="button">Enviar respostas</button>
         </div>
       </div>}
       {confirming && <SubmitConfirmationDialog isSubmitting={submitting} onCancel={() => { if (!submitting) setConfirming(false); }} onConfirm={() => { void confirmSubmission(); }} />}

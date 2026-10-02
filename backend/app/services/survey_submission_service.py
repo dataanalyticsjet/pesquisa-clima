@@ -24,6 +24,8 @@ from app.services.organization_catalog import organization_catalog_service
 
 logger = logging.getLogger(__name__)
 CODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+# Regional codes may contain '/', e.g. MG/SPN. Exact catalog membership is still required.
+REGIONAL_CODE_PATTERN = re.compile(r"^[A-Za-z0-9_/-]{1,64}$")
 MAX_TEXT_BYTES = 60_000
 OPTION_TYPES = {"SELECT", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "LIKERT", "NPS"}
 TEXT_TYPES = {"TEXTAREA", "SHORT_TEXT"}
@@ -35,9 +37,20 @@ ORG_SEGMENT_TYPES = {
 
 
 class SurveySubmissionError(Exception):
-    def __init__(self, code: str):
+    def __init__(self, code: str, *, question_code: str | None = None, reason: str | None = None):
         self.code = code
+        self.question_code = question_code
+        self.reason = reason
         super().__init__(code)
+
+
+def _answer_error(question: SurveyQuestion | None, code: str, reason: str) -> SurveySubmissionError:
+    # Only canonical definition codes can leave the service; never echo unknown input codes.
+    return SurveySubmissionError(
+        code,
+        question_code=question.code if question is not None else None,
+        reason=reason,
+    )
 
 
 @dataclass(frozen=True)
@@ -73,51 +86,57 @@ def _normalize_answers(
 
     submitted_by_code: dict[str, SurveyAnswerSubmission] = {}
     for submitted in request.answers:
+        question = questions_by_code.get(submitted.question_code)
         if not CODE_PATTERN.fullmatch(submitted.question_code):
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(None, "INVALID_ANSWER", "INVALID_QUESTION_CODE")
         if submitted.question_code in submitted_by_code:
-            raise SurveySubmissionError("INVALID_ANSWER")
-        if submitted.question_code not in questions_by_code:
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "DUPLICATE_QUESTION")
+        if question is None:
+            raise _answer_error(None, "INVALID_ANSWER", "UNKNOWN_QUESTION")
         if (submitted.option_codes is None) == (submitted.text_value is None):
-            raise SurveySubmissionError("INVALID_ANSWER")
+            if submitted.option_codes is not None:
+                reason = "ANSWER_REPRESENTATION_CONFLICT"
+            else:
+                reason = "CNPJ_REQUIRED_OR_UNKNOWN" if question.option_source == "ORG_CNPJ" else "ANSWER_VALUE_REQUIRED"
+            raise _answer_error(question, "INVALID_ANSWER", reason)
+        code_pattern = REGIONAL_CODE_PATTERN if question.option_source == "ORG_REGIONAL" else CODE_PATTERN
         if submitted.option_codes is not None and any(
-            not CODE_PATTERN.fullmatch(code) for code in submitted.option_codes
+            not code_pattern.fullmatch(code) for code in submitted.option_codes
         ):
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "INVALID_OPTION_CODE_FORMAT")
         if submitted.text_value is not None and len(
             submitted.text_value.encode("utf-8")
         ) > MAX_TEXT_BYTES:
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "TEXT_TOO_LONG")
         submitted_by_code[submitted.question_code] = submitted
 
     for question in questions:
         answer = submitted_by_code.get(question.code)
         if answer is None:
             if question.required:
-                raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
+                raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "MISSING_REQUIRED_ANSWER")
             continue
         is_cnpj_question = question.option_source == "ORG_CNPJ"
         if question.question_type in OPTION_TYPES and not is_cnpj_question and (
             answer.option_codes is None or answer.text_value is not None
         ):
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "OPTION_CODES_REQUIRED")
         if is_cnpj_question and question.question_type != "SELECT":
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_CNPJ_QUESTION_TYPE")
         if question.question_type in TEXT_TYPES and (
             answer.text_value is None or answer.option_codes is not None
         ):
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "TEXT_VALUE_REQUIRED")
         if question.required:
             if is_cnpj_question:
                 has_unknown_selection = answer.option_codes == ["unknown"]
                 has_cnpj_text = answer.text_value is not None and bool(answer.text_value.strip())
                 if not has_unknown_selection and not has_cnpj_text:
-                    raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
+                    raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "CNPJ_REQUIRED_OR_UNKNOWN")
             elif question.question_type in OPTION_TYPES and not answer.option_codes:
-                raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
+                raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "EMPTY_OPTION_CODES")
             if question.question_type in TEXT_TYPES and not answer.text_value.strip():
-                raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
+                raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "EMPTY_TEXT_VALUE")
 
     normalized: list[ValidatedAnswer] = []
     organization_codes: dict[str, str] = {}
@@ -126,15 +145,20 @@ def _normalize_answers(
         if answer is None:
             continue
         if question.question_type not in OPTION_TYPES | TEXT_TYPES:
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_QUESTION_TYPE")
 
         if question.option_source == "ORG_CNPJ":
             if question.question_type != "SELECT":
-                raise SurveySubmissionError("INVALID_ANSWER")
+                raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_CNPJ_QUESTION_TYPE")
             if answer.text_value is not None:
-                if answer.option_codes is not None or not validate_cnpj(answer.text_value):
-                    raise SurveySubmissionError("INVALID_ANSWER")
-                normalized_value = normalize_cnpj(answer.text_value)
+                if answer.option_codes is not None:
+                    raise _answer_error(question, "INVALID_ANSWER", "ANSWER_REPRESENTATION_CONFLICT")
+                try:
+                    normalized_value = normalize_cnpj(answer.text_value)
+                except ValueError:
+                    raise _answer_error(question, "INVALID_ANSWER", "CNPJ_INVALID_FORMAT") from None
+                if not validate_cnpj(normalized_value):
+                    raise _answer_error(question, "INVALID_ANSWER", "CNPJ_INVALID_CHECK_DIGITS")
                 organization_codes[question.option_source] = normalized_value
                 normalized.append(
                     ValidatedAnswer(
@@ -146,10 +170,10 @@ def _normalize_answers(
                 continue
 
             if answer.option_codes != ["unknown"]:
-                raise SurveySubmissionError("INVALID_ANSWER")
+                raise _answer_error(question, "INVALID_ANSWER", "CNPJ_REQUIRED_OR_UNKNOWN")
             sentinel = question_options.get(question.id, {}).get("unknown")
             if sentinel is None or sentinel.label != "Não sei informar":
-                raise SurveySubmissionError("INVALID_OPTION")
+                raise _answer_error(question, "INVALID_OPTION", "CNPJ_UNKNOWN_OPTION_UNAVAILABLE")
             organization_codes[question.option_source] = "unknown"
             normalized.append(
                 ValidatedAnswer(
@@ -163,26 +187,26 @@ def _normalize_answers(
 
         if question.question_type in TEXT_TYPES:
             if answer.option_codes is not None or answer.text_value is None:
-                raise SurveySubmissionError("INVALID_ANSWER")
+                raise _answer_error(question, "INVALID_ANSWER", "TEXT_VALUE_REQUIRED")
             normalized.append(
                 ValidatedAnswer(question=question, text_value=answer.text_value)
             )
             continue
 
         if answer.text_value is not None or answer.option_codes is None:
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "OPTION_CODES_REQUIRED")
         codes = answer.option_codes
         if question.question_type == "MULTIPLE_CHOICE":
             if not codes:
-                raise SurveySubmissionError("INVALID_MULTIPLE_CHOICE")
+                raise _answer_error(question, "INVALID_MULTIPLE_CHOICE", "EMPTY_OPTION_CODES")
             if len(codes) != len(set(codes)):
-                raise SurveySubmissionError("INVALID_MULTIPLE_CHOICE")
+                raise _answer_error(question, "INVALID_MULTIPLE_CHOICE", "DUPLICATE_OPTION_CODES")
         elif len(codes) != 1:
-            raise SurveySubmissionError("INVALID_ANSWER")
+            raise _answer_error(question, "INVALID_ANSWER", "SINGLE_OPTION_REQUIRED")
 
         if question.option_source in ORG_SEGMENT_TYPES:
             if question.question_type != "SELECT":
-                raise SurveySubmissionError("INVALID_ANSWER")
+                raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_ORGANIZATION_QUESTION_TYPE")
             option_code = codes[0]
             regional_code = organization_codes.get("ORG_REGIONAL")
             base_code = organization_codes.get("ORG_BASE")
@@ -193,9 +217,10 @@ def _normalize_answers(
                 base_code=base_code,
             )
             if valid is None:
-                raise SurveySubmissionError("ORGANIZATION_CATALOG_UNAVAILABLE")
+                raise _answer_error(question, "ORGANIZATION_CATALOG_UNAVAILABLE", "ORGANIZATION_CATALOG_UNAVAILABLE")
             if not valid:
-                raise SurveySubmissionError("INVALID_OPTION")
+                reason = "INVALID_REGIONAL" if question.option_source == "ORG_REGIONAL" else "SC_NOT_IN_REGIONAL"
+                raise _answer_error(question, "INVALID_OPTION", reason)
             organization_codes[question.option_source] = option_code
             normalized.append(
                 ValidatedAnswer(
@@ -209,9 +234,9 @@ def _normalize_answers(
         options_by_code = question_options.get(question.id, {})
         selected = [options_by_code.get(code) for code in codes]
         if any(option is None for option in selected):
-            raise SurveySubmissionError("INVALID_OPTION")
+            raise _answer_error(question, "INVALID_OPTION", "INVALID_OPTION")
         if any(option.is_exclusive for option in selected) and len(selected) != 1:
-            raise SurveySubmissionError("EXCLUSIVE_OPTION_CONFLICT")
+            raise _answer_error(question, "EXCLUSIVE_OPTION_CONFLICT", "EXCLUSIVE_OPTION_CONFLICT")
         normalized.append(
             ValidatedAnswer(
                 question=question,
