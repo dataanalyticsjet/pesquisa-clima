@@ -1,63 +1,112 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AttentionCard } from "../components/management/AttentionCard";
-import { ManagementNpsSummary, ManagementOverviewAnalysis } from "../components/management/ManagementAnalysis";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ManagementLayout, ManagementPageTitle } from "../components/management/ManagementNav";
 import { MetricCard } from "../components/management/MetricCard";
-import { PillarScoreCard } from "../components/management/PillarScoreCard";
-import { TrendChart } from "../components/management/TrendChart";
-import { useManagementFilters } from "../components/management/ManagementFilters";
-import { averageScore, filterManagementAttention, filterManagementSegments, mockManagement } from "../data/mockManagement";
+import { ApiError } from "../lib/api";
+import { getManagementOverview, type ManagementOverviewResponse } from "../services/management";
 
 export const Route = createFileRoute("/management/")({ component: ManagementOverview });
 
+const surveyCode = "CLIMATE_2026";
 const formatInteger = new Intl.NumberFormat("pt-BR");
 const formatPercent = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+function getSurveyStatus(status: string): { label: string; tone: "active" | "neutral" } {
+  switch (status) {
+    case "DRAFT": return { label: "Rascunho", tone: "neutral" };
+    case "ACTIVE": return { label: "Ativa", tone: "active" };
+    case "CLOSED": return { label: "Encerrada", tone: "neutral" };
+    default: return { label: "Status indisponível", tone: "neutral" };
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    switch (error.status) {
+      case 403: return "Seu perfil não tem autorização para acessar a visão da gestão.";
+      case 404: return "A pesquisa solicitada não foi encontrada.";
+      case 503: return "A visão da gestão está temporariamente indisponível. Tente novamente mais tarde.";
+      case 0: return "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.";
+    }
+  }
+  return "Não foi possível carregar a visão da gestão. Tente novamente mais tarde.";
+}
+
+function getNpsValue(data: ManagementOverviewResponse) {
+  if (!data.analytics_available || data.nps === null) return "Dados insuficientes";
+  return `${data.nps > 0 ? "+" : ""}${formatPercent.format(data.nps)}`;
+}
+
 function ManagementOverview() {
-  const { filters } = useManagementFilters();
-  const { survey, pillars, overallEvolution } = mockManagement;
-  const hasFilters = Object.values(filters).some(Boolean);
-  const matched = filterManagementSegments(filters);
-  const segments = matched.filter((segment) => !segment.protected);
-  const privateOnly = matched.length > 0 && segments.length === 0;
-  const attention = filterManagementAttention(filters);
-  const scopedScores = segments.flatMap((segment) => pillars.map((pillar) => segment.pillarScores[pillar.id]))
-    .filter((score): score is number => typeof score === "number");
-  const overallScore = hasFilters ? averageScore(scopedScores) : survey.overallScore;
-  const responseCount = hasFilters ? segments.reduce((sum, segment) => sum + segment.responseCount, 0) : survey.responses;
-  const orderedPillars = pillars.map((pillar) => {
-    const score = hasFilters
-      ? averageScore(segments.map((segment) => segment.pillarScores[pillar.id]).filter((value): value is number => typeof value === "number"))
-      : pillar.score;
-    const safeScore = score ?? pillar.score;
-    const neutral = 18;
-    const negative = Math.max(8, Math.min(60, 100 - safeScore));
-    return { ...pillar, score: safeScore, distribution: hasFilters ? { positive: 100 - neutral - negative, neutral, negative } : pillar.distribution };
-  }).sort((a, b) => b.score - a.score);
+  const navigate = useNavigate();
+  const [data, setData] = useState<ManagementOverviewResponse | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getManagementOverview(surveyCode)
+      .then((result) => { if (active) setData(result); })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        if (reason instanceof ApiError && reason.status === 401) {
+          void navigate({ to: "/login", replace: true });
+          return;
+        }
+        setError(getErrorMessage(reason));
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [navigate]);
+
+  const status = data ? getSurveyStatus(data.survey_status) : undefined;
+  const invitedValue = data?.invited_count === null || !data
+    ? "Indisponível"
+    : formatInteger.format(data.invited_count);
+  const invitedDetail = data?.invited_population_source_configured
+    ? "População convidada consolidada"
+    : "Fonte de convidados ainda não configurada";
+  const adherenceValue = data?.adherence_percent === null || !data
+    ? "Indisponível"
+    : `${formatPercent.format(data.adherence_percent)}%`;
+  const adherenceDetail = data?.adherence_percent === null || !data
+    ? "Aguardando fonte oficial de convidados"
+    : "Participação sobre a população convidada";
+  const npsDetail = data && (!data.analytics_available || data.nps === null)
+    ? `Mínimo de ${data.min_group_size} respostas necessário`
+    : "Escala de -100 a +100";
 
   return (
-    <ManagementLayout>
-      <ManagementPageTitle eyebrow="VISÃO DA GESTÃO" statusBadge="Pesquisa ativa" title={survey.title} description="Visão consolidada dos resultados da organização." />
-      {privateOnly && <div className="management-protected-state" role="status"><strong>Dados indisponíveis para preservar a confidencialidade.</strong><span>Resultados exibidos somente de forma consolidada. Nenhuma resposta individual é disponibilizada.</span></div>}
-      {!privateOnly && <>
-        <section className="management-metrics" aria-label="Indicadores do recorte selecionado">
-          <MetricCard label="Índice geral" value={overallScore === null ? "—" : String(overallScore)} detail={hasFilters ? "média mockada do recorte" : "de 100 pontos"} />
-          <MetricCard label="Adesão" value={formatPercent.format(survey.adherence) + "%"} detail="indicador geral demonstrativo" />
-          <MetricCard label="Respostas" value={formatInteger.format(responseCount)} detail={hasFilters ? "contagem consolidada fictícia" : "respostas consolidadas"} />
-          <MetricCard label="Pontos de atenção" value={String(attention.length)} detail="no recorte selecionado" />
-        </section>
-        <section className="management-section" aria-labelledby="overview-pillars-title">
-          <div className="management-section__heading"><div><p className="management-eyebrow">RESULTADOS CONSOLIDADOS</p><h2 id="overview-pillars-title">Resultado por pilar</h2></div></div>
-          <div className="pillar-score-grid pillar-score-grid--overview">{orderedPillars.map((pillar) => <PillarScoreCard key={pillar.id} pillar={pillar} />)}</div>
-        </section>
-      </>}
-      {!privateOnly && <ManagementNpsSummary />}
-      <ManagementOverviewAnalysis />
-      <section className="management-section" aria-labelledby="overview-attention-title">
-        <div className="management-section__heading"><div><p className="management-eyebrow">PRIORIDADES</p><h2 id="overview-attention-title">Pontos que exigem atenção</h2></div></div>
-        {attention.length ? <div className="attention-grid">{attention.map((item) => <AttentionCard key={item.id} item={item} />)}</div> : <p className="management-demo-note">Nenhum alerta mockado corresponde a este recorte.</p>}
-      </section>
-      {!hasFilters && <section className="management-section management-section--chart" aria-label="Evolução simulada do índice geral"><TrendChart title="Evolução simulada do índice geral" values={overallEvolution} /><p className="management-demo-note">Série histórica fictícia para demonstração.</p></section>}
+    <ManagementLayout showDemoFilters={false}>
+      <ManagementPageTitle
+        eyebrow="VISÃO DA GESTÃO"
+        statusBadge={status?.label}
+        statusTone={status?.tone}
+        title="Pesquisa de Clima 2026"
+        description="Visão consolidada dos resultados da organização."
+      />
+      {loading && (
+        <div className="management-pillars-state" role="status" aria-live="polite">
+          <span className="management-pillars-state__spinner" aria-hidden="true" />
+          <span>Carregando dados consolidados…</span>
+        </div>
+      )}
+      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{error}</p>}
+      {!loading && data && (
+        <>
+          <section className="management-metrics management-metrics--overview" aria-label="Indicadores consolidados da pesquisa">
+            <MetricCard label="Índice geral" value="Em definição" detail="Indicador ainda não disponível na API." />
+            <MetricCard label="Convidados" value={invitedValue} detail={invitedDetail} />
+            <MetricCard label="Adesão" value={adherenceValue} detail={adherenceDetail} />
+            <MetricCard label="Participações concluídas" value={formatInteger.format(data.completed_participations)} detail="Participações registradas na pesquisa." />
+            <MetricCard label="Respostas anônimas" value={formatInteger.format(data.anonymous_response_count)} detail="Contagem agregada de respostas recebidas." />
+            <MetricCard label="NPS" value={getNpsValue(data)} detail={npsDetail} />
+          </section>
+          <p className="management-privacy-note" role="note">
+            Os indicadores são apresentados de forma consolidada. Resultados sujeitos ao mínimo de {data.min_group_size} respostas para preservar a confidencialidade.
+          </p>
+        </>
+      )}
     </ManagementLayout>
   );
 }

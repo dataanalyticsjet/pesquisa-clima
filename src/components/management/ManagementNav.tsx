@@ -47,18 +47,20 @@ export function ManagementLayout({ children, showDemoFilters = true }: { childre
 export function ManagementPageTitle({
   eyebrow = "VISÃO DA GESTÃO",
   statusBadge,
+  statusTone = "active",
   title,
   description,
 }: {
   eyebrow?: string;
   statusBadge?: string;
+  statusTone?: "active" | "neutral";
   title: string;
   description: string;
 }) {
   return (
     <header className="management-page-title">
       <p className="management-eyebrow">{eyebrow}</p>
-      {statusBadge && <span className="management-status">{statusBadge}</span>}
+      {statusBadge && <span className={`management-status management-status--${statusTone}`}>{statusBadge}</span>}
       <h1>{title}</h1>
       <p>{description}</p>
     </header>

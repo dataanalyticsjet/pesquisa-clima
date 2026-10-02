@@ -117,6 +117,9 @@
   content: "";
 }
 
+.management-status--neutral { color: var(--color-text-secondary); }
+.management-status--neutral::before { background: var(--color-text-muted); }
+
 .management-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -125,6 +128,10 @@
 
 .management-metrics--three {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.management-metrics--overview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .management-metric,
