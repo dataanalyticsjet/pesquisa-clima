@@ -35,3 +35,45 @@ class ManagementSurveyPillarsResponse(BaseModel):
     survey_status: str
     min_group_size: int
     pillars: list[ManagementPillarResponse]
+
+
+class ManagementAttentionQuestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_code: str
+    question_text: str
+    analytics_available: bool
+    attention_rate: float | None
+    respondent_count: int | None
+
+
+class ManagementAttentionSC(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sc_code: str
+    sc_name: str
+    display_name: str
+    attention_rate: float | None
+    analytics_available: bool
+    respondent_count: int | None
+    questions: list[ManagementAttentionQuestion]
+
+
+class ManagementAttentionRegional(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    regional_code: str
+    attention_rate: float | None
+    analytics_available: bool
+    respondent_count: int | None
+    questions: list[ManagementAttentionQuestion]
+    scs: list[ManagementAttentionSC]
+
+
+class ManagementSurveyAttentionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    survey_code: str
+    survey_status: str
+    min_group_size: int
+    regionals: list[ManagementAttentionRegional]

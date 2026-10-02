@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.anonymous_responses import (
     AnonymousResponse,
+    AnonymousResponseSegment,
     ResponseAnswer,
     ResponseAnswerOption,
 )
@@ -209,4 +210,218 @@ def get_pillar_respondent_counts(session: Session, survey_id: int) -> list[tuple
     return [
         (str(section_code), int(respondent_count))
         for section_code, respondent_count in session.execute(statement).all()
+    ]
+
+
+def get_attention_question_definitions(
+    session: Session, survey_id: int
+) -> list[tuple[int, str, str, int]]:
+    """Return all database-defined SCORE/LIKERT questions in display order."""
+    statement = (
+        select(
+            SurveyQuestion.id,
+            SurveyQuestion.code,
+            SurveyQuestion.text,
+            SurveyQuestion.position,
+        )
+        .where(
+            SurveyQuestion.survey_id == survey_id,
+            SurveyQuestion.analysis_role == "SCORE",
+            SurveyQuestion.question_type == "LIKERT",
+        )
+        .order_by(SurveyQuestion.position)
+    )
+    return [
+        (int(question_id), str(code), str(text), int(position))
+        for question_id, code, text, position in session.execute(statement).all()
+    ]
+
+
+def get_attention_group_respondent_counts(
+    session: Session, survey_id: int
+) -> list[tuple[str, str, int]]:
+    """Count distinct anonymous respondents with valid Likert answers per group."""
+    statement = (
+        select(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+            func.count(distinct(ResponseAnswer.response_id)),
+        )
+        .select_from(ResponseAnswer)
+        .join(
+            AnonymousResponse,
+            and_(
+                AnonymousResponse.response_id == ResponseAnswer.response_id,
+                AnonymousResponse.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .join(
+            SurveyQuestion,
+            and_(
+                SurveyQuestion.id == ResponseAnswer.question_id,
+                SurveyQuestion.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .join(
+            ResponseAnswerOption,
+            and_(
+                ResponseAnswerOption.answer_id == ResponseAnswer.id,
+                ResponseAnswerOption.question_id == ResponseAnswer.question_id,
+            ),
+        )
+        .join(
+            SurveyQuestionOption,
+            and_(
+                SurveyQuestionOption.question_id == ResponseAnswerOption.question_id,
+                SurveyQuestionOption.id == ResponseAnswerOption.option_id,
+            ),
+        )
+        .join(
+            AnonymousResponseSegment,
+            AnonymousResponseSegment.response_id == ResponseAnswer.response_id,
+        )
+        .where(
+            ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.analysis_role == "SCORE",
+            SurveyQuestion.question_type == "LIKERT",
+            SurveyQuestionOption.score_value.between(1, 5),
+            AnonymousResponseSegment.segment_type.in_(("REGIONAL", "BASE")),
+        )
+        .group_by(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+        )
+    )
+    return [
+        (str(segment_type), str(segment_code), int(respondent_count))
+        for segment_type, segment_code, respondent_count in session.execute(statement).all()
+    ]
+
+
+def get_attention_score_counts(
+    session: Session, survey_id: int
+) -> list[tuple[str, str, int, str, str, int, int | None, int]]:
+    """Aggregate answer rows by anonymous group, eligible question, and stored score."""
+    statement = (
+        select(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+            SurveyQuestion.id,
+            SurveyQuestion.code,
+            SurveyQuestion.text,
+            SurveyQuestion.position,
+            SurveyQuestionOption.score_value,
+            func.count(distinct(ResponseAnswer.id)),
+        )
+        .select_from(ResponseAnswer)
+        .join(
+            SurveyQuestion,
+            and_(
+                SurveyQuestion.id == ResponseAnswer.question_id,
+                SurveyQuestion.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .join(
+            ResponseAnswerOption,
+            and_(
+                ResponseAnswerOption.answer_id == ResponseAnswer.id,
+                ResponseAnswerOption.question_id == ResponseAnswer.question_id,
+            ),
+        )
+        .join(
+            SurveyQuestionOption,
+            and_(
+                SurveyQuestionOption.question_id == ResponseAnswerOption.question_id,
+                SurveyQuestionOption.id == ResponseAnswerOption.option_id,
+            ),
+        )
+        .join(
+            AnonymousResponseSegment,
+            AnonymousResponseSegment.response_id == ResponseAnswer.response_id,
+        )
+        .where(
+            ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.analysis_role == "SCORE",
+            SurveyQuestion.question_type == "LIKERT",
+            AnonymousResponseSegment.segment_type.in_(("REGIONAL", "BASE")),
+        )
+        .group_by(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+            SurveyQuestion.id,
+            SurveyQuestion.code,
+            SurveyQuestion.text,
+            SurveyQuestion.position,
+            SurveyQuestionOption.score_value,
+        )
+    )
+    rows = session.execute(statement).all()
+    return [
+        (
+            str(segment_type),
+            str(segment_code),
+            int(question_id),
+            str(question_code),
+            str(question_text),
+            int(position),
+            int(score_value) if score_value is not None else None,
+            int(answer_count),
+        )
+        for segment_type, segment_code, question_id, question_code, question_text, position, score_value, answer_count in rows
+    ]
+
+
+def get_attention_question_respondent_counts(
+    session: Session, survey_id: int
+) -> list[tuple[str, str, int, int]]:
+    """Count distinct anonymous respondents with valid scores per group/question."""
+    statement = (
+        select(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+            SurveyQuestion.id,
+            func.count(distinct(ResponseAnswer.response_id)),
+        )
+        .select_from(ResponseAnswer)
+        .join(
+            SurveyQuestion,
+            and_(
+                SurveyQuestion.id == ResponseAnswer.question_id,
+                SurveyQuestion.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .join(
+            ResponseAnswerOption,
+            and_(
+                ResponseAnswerOption.answer_id == ResponseAnswer.id,
+                ResponseAnswerOption.question_id == ResponseAnswer.question_id,
+            ),
+        )
+        .join(
+            SurveyQuestionOption,
+            and_(
+                SurveyQuestionOption.question_id == ResponseAnswerOption.question_id,
+                SurveyQuestionOption.id == ResponseAnswerOption.option_id,
+            ),
+        )
+        .join(
+            AnonymousResponseSegment,
+            AnonymousResponseSegment.response_id == ResponseAnswer.response_id,
+        )
+        .where(
+            ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.analysis_role == "SCORE",
+            SurveyQuestion.question_type == "LIKERT",
+            SurveyQuestionOption.score_value.between(1, 5),
+            AnonymousResponseSegment.segment_type.in_(("REGIONAL", "BASE")),
+        )
+        .group_by(
+            AnonymousResponseSegment.segment_type,
+            AnonymousResponseSegment.segment_code,
+            SurveyQuestion.id,
+        )
+    )
+    return [
+        (str(segment_type), str(segment_code), int(question_id), int(respondent_count))
+        for segment_type, segment_code, question_id, respondent_count in session.execute(statement).all()
     ]

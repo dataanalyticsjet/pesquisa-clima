@@ -4,17 +4,34 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_db_session, require_management_access
 from app.models.identity import User
 from app.schemas.management import (
+    ManagementSurveyAttentionResponse,
     ManagementSurveyOverviewResponse,
     ManagementSurveyPillarsResponse,
 )
 from app.services.management_service import (
     ManagementSurveyNotFoundError,
+    get_survey_attention,
     get_survey_overview,
     get_survey_pillars,
 )
 
 
 router = APIRouter(prefix="/api/management/surveys", tags=["management"])
+
+
+@router.get(
+    "/{survey_code}/attention",
+    response_model=ManagementSurveyAttentionResponse,
+)
+def read_survey_attention(
+    survey_code: str,
+    _user: User = Depends(require_management_access),
+    session: Session = Depends(get_db_session),
+):
+    try:
+        return get_survey_attention(session, survey_code)
+    except ManagementSurveyNotFoundError:
+        raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
 
 
 @router.get(
