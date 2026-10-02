@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models.identity import User
+from app.repositories import identity_repository
 from app.repositories.identity_repository import get_user_by_id
 
 
@@ -28,4 +29,14 @@ def get_current_user(
     if user is None or user.status != "ACTIVE":
         request.session.clear()
         raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
+    return user
+
+
+def require_management_access(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_db_session)],
+) -> User:
+    roles = identity_repository.get_user_roles(session, user.id)
+    if not {"MANAGEMENT", "SURVEY_ADMIN", "ADMIN"}.intersection(roles):
+        raise HTTPException(status_code=403, detail="MANAGEMENT_ACCESS_REQUIRED")
     return user

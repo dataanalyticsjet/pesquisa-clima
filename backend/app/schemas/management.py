@@ -1,0 +1,17 @@
+from pydantic import BaseModel, ConfigDict
+
+
+class ManagementSurveyOverviewResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    survey_code: str
+    survey_status: str
+    min_group_size: int
+    completed_participations: int
+    anonymous_response_count: int
+    respondent_count: int
+    analytics_available: bool
+    nps: float | None
+    invited_count: int | None
+    adherence_percent: float | None
+    invited_population_source_configured: bool
