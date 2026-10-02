@@ -9,7 +9,7 @@ export function SurveyCard({ completed, survey }: { completed: boolean; survey: 
         <span className="survey-card__eyebrow">Pesquisa disponível</span>
         <span className={`survey-status${completed ? " survey-status--completed" : ""}`}>
           <span className="survey-status__dot" aria-hidden="true" />
-          {completed ? "Concluída" : survey.status === "ACTIVE" ? "Pesquisa ativa" : "Em desenvolvimento"}
+          {completed ? "Concluída" : survey.status === "ACTIVE" ? "Pesquisa ativa" : "Rascunho"}
         </span>
       </div>
 

@@ -173,7 +173,7 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
     <div className="survey-flow">
       <header className="survey-flow__header">
         <Link className="survey-back-link" to="/home"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H5m6 6-6-6 6-6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>Voltar ao início</Link>
-        <div className="survey-flow__title-row"><div><p className="survey-section-eyebrow">Pesquisa do colaborador</p>{step !== "intro" && <h1>{survey.title}</h1>}</div><span className="survey-demo-label">{survey.status === "DRAFT" ? "Em desenvolvimento" : "Pesquisa ativa"}</span></div>
+        <div className="survey-flow__title-row"><div><p className="survey-section-eyebrow">Pesquisa do colaborador</p>{step !== "intro" && <h1>{survey.title}</h1>}</div><span className="survey-demo-label">{survey.status === "DRAFT" ? "Rascunho" : "Pesquisa ativa"}</span></div>
       </header>
       {step === "intro" && <SurveyIntro survey={survey} onStart={() => setStep("questions")} />}
       {step === "questions" && currentQuestion && <div className="survey-question-stage">

@@ -77,7 +77,7 @@ function ManagementOverview() {
     : "Escala de -100 a +100";
 
   return (
-    <ManagementLayout showDemoFilters={false}>
+    <ManagementLayout>
       <ManagementPageTitle
         eyebrow="VISÃO DA GESTÃO"
         statusBadge={status?.label}

@@ -41,7 +41,7 @@ function ManagementPillars() {
   }, [navigate]);
 
   return (
-    <ManagementLayout showDemoFilters={false}>
+    <ManagementLayout>
       <ManagementPageTitle title="Resultados por pilar" description="Índices consolidados dos pilares da Pesquisa de Clima, respeitando o mínimo de respostas para divulgação." />
       {loading && (
         <div className="management-pillars-state" role="status" aria-live="polite">

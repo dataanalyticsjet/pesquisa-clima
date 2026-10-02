@@ -47,6 +47,9 @@ function CollaboratorHome() {
   if (error || !data) return <p role="alert" className="api-state">{error || "Não foi possível carregar as informações."}</p>;
   const firstName = data.user.name.trim().split(/\s+/)[0] ?? "Colaborador";
   const displayName = firstName ? firstName.charAt(0).toLocaleUpperCase("pt-BR") + firstName.slice(1).toLocaleLowerCase("pt-BR") : "Colaborador";
+  const canViewManagement = data.user.roles.some((role) =>
+    ["MANAGEMENT", "SURVEY_ADMIN", "ADMIN"].includes(role),
+  );
 
   return (
     <div className="employee-page employee-home">
@@ -61,11 +64,11 @@ function CollaboratorHome() {
         <SurveyPrivacyNote />
       </div>
 
-      {/* DEMO ONLY
-      Remove when real roles are implemented. */}
-      <Link className="employee-home__management-link" to="/management">
-        Visão Gestão (demo)
-      </Link>
+      {canViewManagement && (
+        <Link className="employee-home__management-link" to="/management">
+          Visão Gestão
+        </Link>
+      )}
       <button className="employee-home__logout" onClick={handleLogout} type="button">Sair</button>
     </div>
   );

@@ -144,7 +144,7 @@ function ManagementAttention() {
   const serviceCenterCount = data?.regionals.reduce((total, regional) => total + regional.scs.length, 0) ?? 0;
 
   return (
-    <ManagementLayout showDemoFilters={false}>
+    <ManagementLayout>
       <ManagementPageTitle
         title="Pontos de atenção"
         description="Taxas consolidadas por Regional, SC e pergunta, respeitando o mínimo de respostas para divulgação."

@@ -1,5 +1,4 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ManagementFiltersBar } from "./ManagementFilters";
 
 const managementLinks = [
   { to: "/management", label: "Visão Geral" },
@@ -33,11 +32,10 @@ export function ManagementNav() {
   );
 }
 
-export function ManagementLayout({ children, showDemoFilters = true }: { children: React.ReactNode; showDemoFilters?: boolean }) {
+export function ManagementLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="management-layout">
       <ManagementNav />
-      {showDemoFilters && <ManagementFiltersBar />}
       {children}
     </div>
   );

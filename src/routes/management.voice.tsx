@@ -151,7 +151,7 @@ function ManagementVoice() {
   );
 
   return (
-    <ManagementLayout showDemoFilters={false}>
+    <ManagementLayout>
       <ManagementPageTitle
         title="Sua Voz"
         description="Comentários e termos anônimos das respostas abertas da Pesquisa de Clima."
