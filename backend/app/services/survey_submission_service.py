@@ -18,6 +18,7 @@ from app.models.participation import SurveyParticipation
 from app.models.survey import SurveyQuestion, SurveyQuestionOption
 from app.repositories import submission_repository
 from app.schemas.responses import SurveyAnswerSubmission, SurveySubmissionRequest
+from app.services.cnpj import normalize_cnpj, validate_cnpj
 from app.services.organization_catalog import organization_catalog_service
 
 
@@ -96,16 +97,24 @@ def _normalize_answers(
             if question.required:
                 raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
             continue
-        if question.question_type in OPTION_TYPES and (
+        is_cnpj_question = question.option_source == "ORG_CNPJ"
+        if question.question_type in OPTION_TYPES and not is_cnpj_question and (
             answer.option_codes is None or answer.text_value is not None
         ):
+            raise SurveySubmissionError("INVALID_ANSWER")
+        if is_cnpj_question and question.question_type != "SELECT":
             raise SurveySubmissionError("INVALID_ANSWER")
         if question.question_type in TEXT_TYPES and (
             answer.text_value is None or answer.option_codes is not None
         ):
             raise SurveySubmissionError("INVALID_ANSWER")
         if question.required:
-            if question.question_type in OPTION_TYPES and not answer.option_codes:
+            if is_cnpj_question:
+                has_unknown_selection = answer.option_codes == ["unknown"]
+                has_cnpj_text = answer.text_value is not None and bool(answer.text_value.strip())
+                if not has_unknown_selection and not has_cnpj_text:
+                    raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
+            elif question.question_type in OPTION_TYPES and not answer.option_codes:
                 raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
             if question.question_type in TEXT_TYPES and not answer.text_value.strip():
                 raise SurveySubmissionError("MISSING_REQUIRED_ANSWER")
@@ -118,6 +127,39 @@ def _normalize_answers(
             continue
         if question.question_type not in OPTION_TYPES | TEXT_TYPES:
             raise SurveySubmissionError("INVALID_ANSWER")
+
+        if question.option_source == "ORG_CNPJ":
+            if question.question_type != "SELECT":
+                raise SurveySubmissionError("INVALID_ANSWER")
+            if answer.text_value is not None:
+                if answer.option_codes is not None or not validate_cnpj(answer.text_value):
+                    raise SurveySubmissionError("INVALID_ANSWER")
+                normalized_value = normalize_cnpj(answer.text_value)
+                organization_codes[question.option_source] = normalized_value
+                normalized.append(
+                    ValidatedAnswer(
+                        question=question,
+                        text_value=normalized_value,
+                        organization_code=normalized_value,
+                    )
+                )
+                continue
+
+            if answer.option_codes != ["unknown"]:
+                raise SurveySubmissionError("INVALID_ANSWER")
+            sentinel = question_options.get(question.id, {}).get("unknown")
+            if sentinel is None or sentinel.label != "Não sei informar":
+                raise SurveySubmissionError("INVALID_OPTION")
+            organization_codes[question.option_source] = "unknown"
+            normalized.append(
+                ValidatedAnswer(
+                    question=question,
+                    text_value=None,
+                    option_ids=(sentinel.id,),
+                    organization_code="unknown",
+                )
+            )
+            continue
 
         if question.question_type in TEXT_TYPES:
             if answer.option_codes is not None or answer.text_value is None:
@@ -142,21 +184,6 @@ def _normalize_answers(
             if question.question_type != "SELECT":
                 raise SurveySubmissionError("INVALID_ANSWER")
             option_code = codes[0]
-            if question.option_source == "ORG_CNPJ" and option_code == "unknown":
-                sentinel = question_options.get(question.id, {}).get(option_code)
-                if sentinel is None:
-                    raise SurveySubmissionError("INVALID_OPTION")
-                normalized.append(
-                    ValidatedAnswer(
-                        question=question,
-                        text_value=None,
-                        option_ids=(sentinel.id,),
-                        organization_code=option_code,
-                    )
-                )
-                organization_codes[question.option_source] = option_code
-                continue
-
             regional_code = organization_codes.get("ORG_REGIONAL")
             base_code = organization_codes.get("ORG_BASE")
             valid = organization_catalog.validate_selection(

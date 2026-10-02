@@ -17,8 +17,8 @@ class RegionalCatalogEntry:
     service_centers: tuple[ServiceCenter, ...]
 
 
-# Approved partial catalog for management reporting. It intentionally contains
-# no CNPJ and is not yet used to validate collaborator survey submissions.
+# Approved Regional → SC catalog shared by survey selection and management reporting.
+# CNPJ is user-entered data and is intentionally not represented in this catalog.
 REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
     RegionalCatalogEntry(
         "BA",
@@ -80,16 +80,21 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
 
 
 class OrganizationCatalogService:
-    """Catalog adapter for the approved partial management reporting source.
-
-    The partial Regional/SC catalog is not a complete organizational catalog,
-    so selection validation stays unavailable until the complete official
-    source (including CNPJ) is approved.
-    """
+    """Read and validate the approved Regional → SC catalog."""
 
     def get_regional_sc_catalog(self) -> tuple[RegionalCatalogEntry, ...]:
-        """Return the approved partial Regional/SC list for management views."""
+        """Return the single approved Regional/SC source for all frontend consumers."""
         return REGIONAL_SC_CATALOG
+
+    def get_regionals(self) -> tuple[str, ...]:
+        return tuple(regional.code for regional in REGIONAL_SC_CATALOG)
+
+    def get_service_centers(self, regional_code: str) -> tuple[ServiceCenter, ...] | None:
+        regional = next(
+            (entry for entry in REGIONAL_SC_CATALOG if entry.code == regional_code),
+            None,
+        )
+        return None if regional is None else regional.service_centers
 
     def validate_selection(
         self,
@@ -98,8 +103,20 @@ class OrganizationCatalogService:
         *,
         regional_code: str | None = None,
         base_code: str | None = None,
-    ) -> bool | None:
-        return None
+    ) -> bool:
+        if option_source == "ORG_REGIONAL":
+            return option_code in self.get_regionals()
+
+        if option_source == "ORG_BASE":
+            if regional_code is None:
+                return False
+            service_centers = self.get_service_centers(regional_code)
+            return service_centers is not None and any(
+                service_center.code == option_code for service_center in service_centers
+            )
+
+        # CNPJ is validated as free text by the submission service, never as a catalog code.
+        return False
 
 
 organization_catalog_service = OrganizationCatalogService()

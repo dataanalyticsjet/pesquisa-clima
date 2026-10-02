@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-// DEMO UI ONLY
-// Real single-submission enforcement will be implemented server-side.
-export function SurveySuccess() {
+export function SurveySuccess({ completionText }: { completionText?: string | null }) {
   return (
     <section className="survey-success" aria-labelledby="survey-success-title">
       <span className="survey-success__icon" aria-hidden="true">
@@ -13,7 +11,7 @@ export function SurveySuccess() {
       </span>
       <p className="survey-section-eyebrow">Participação concluída</p>
       <h1 id="survey-success-title">Pesquisa enviada</h1>
-      <p className="survey-success__thanks">Obrigada por participar!</p>
+      <p className="survey-success__thanks">{completionText || "Obrigada por participar!"}</p>
       <div className="survey-success__description">
         <p>Seu envio foi concluído.</p>
         <p>Por segurança e integridade da pesquisa, não será possível enviar uma nova resposta.</p>
@@ -22,7 +20,6 @@ export function SurveySuccess() {
       <Link className="survey-button survey-button--primary" to="/home">
         Voltar ao início
       </Link>
-      <p className="survey-success__demo-note">Demonstração: nenhuma resposta foi enviada a um servidor.</p>
     </section>
   );
 }

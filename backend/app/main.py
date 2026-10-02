@@ -6,6 +6,7 @@ from app.api.auth import router as auth_router
 from app.api.database import router as database_router
 from app.api.health import router as health_router
 from app.api.management import router as management_router
+from app.api.organization import router as organization_router
 from app.api.surveys import router as surveys_router
 from app.core.config import settings
 
@@ -45,4 +46,5 @@ app.include_router(health_router)
 app.include_router(database_router)
 app.include_router(surveys_router)
 app.include_router(management_router)
+app.include_router(organization_router)
 app.include_router(auth_router)

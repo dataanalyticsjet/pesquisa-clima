@@ -121,7 +121,7 @@ def test_catalog_formats_display_name_and_does_not_invent_cnpj():
     aju = REGIONAL_SC_CATALOG[0].service_centers[0]
     assert aju.display_name == "AJU — SE - ARACAJU"
     assert all("cnpj" not in sc.__dict__ for regional in REGIONAL_SC_CATALOG for sc in regional.service_centers)
-    assert OrganizationCatalogService().validate_selection("ORG_CNPJ", "invented") is None
+    assert OrganizationCatalogService().validate_selection("ORG_CNPJ", "invented") is False
 
 
 @pytest.mark.parametrize("score,expected_rate", [(1, 100.0), (2, 100.0), (3, 0.0), (4, 0.0), (5, 0.0)])
@@ -428,8 +428,13 @@ def test_attention_payload_omits_internal_ids_and_catalog_has_no_cnpj(monkeypatc
     assert all("cnpj" not in sc for item in payload["regionals"] for sc in item["scs"])
 
 
-def test_catalog_entry_can_be_reused_without_enabling_selection_validation():
+def test_catalog_entry_is_shared_with_submission_validation():
     catalog = OrganizationCatalogService()
     assert catalog.get_regional_sc_catalog() is REGIONAL_SC_CATALOG
-    assert catalog.validate_selection("ORG_REGIONAL", "BA") is None
-    assert catalog.validate_selection("ORG_BASE", "AJU", regional_code="BA") is None
+    assert catalog.validate_selection("ORG_REGIONAL", "BA") is True
+    assert catalog.validate_selection("ORG_REGIONAL", "NOT-A-REGION") is False
+    assert catalog.validate_selection("ORG_BASE", "AJU", regional_code="BA") is True
+    assert catalog.validate_selection("ORG_BASE", "INVALID", regional_code="BA") is False
+    assert catalog.validate_selection("ORG_BASE", "GRU", regional_code="BA") is False
+    assert catalog.validate_selection("ORG_BASE", "GRU", regional_code="SPE") is True
+    assert catalog.validate_selection("ORG_BASE", "BRE", regional_code="SPS") is True

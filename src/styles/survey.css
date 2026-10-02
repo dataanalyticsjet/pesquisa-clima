@@ -1517,3 +1517,8 @@
     gap: 5px;
   }
 }
+.survey-cnpj-field { display: grid; gap: var(--space-3); }
+.survey-cnpj-field__label { color: var(--color-text-secondary); font-size: 0.9rem; font-weight: 600; }
+.survey-cnpj-field__unknown { margin-top: var(--space-2); }
+.survey-field-error,
+.survey-submit-error { margin: var(--space-2) 0 0; color: var(--color-danger); font-size: 0.9rem; line-height: 1.45; }

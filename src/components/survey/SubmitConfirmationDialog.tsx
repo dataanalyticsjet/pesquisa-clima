@@ -3,19 +3,20 @@ import { useEffect, useRef } from "react";
 type SubmitConfirmationDialogProps = {
   onCancel: () => void;
   onConfirm: () => void;
+  isSubmitting?: boolean;
 };
 
-export function SubmitConfirmationDialog({ onCancel, onConfirm }: SubmitConfirmationDialogProps) {
+export function SubmitConfirmationDialog({ onCancel, onConfirm, isSubmitting = false }: SubmitConfirmationDialogProps) {
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     confirmButtonRef.current?.focus();
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onCancel();
+      if (event.key === "Escape" && !isSubmitting) onCancel();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
+  }, [isSubmitting, onCancel]);
 
   return (
     <div className="survey-dialog-backdrop">
@@ -34,14 +35,14 @@ export function SubmitConfirmationDialog({ onCancel, onConfirm }: SubmitConfirma
         </span>
         <h2 id="survey-confirm-title">Enviar pesquisa?</h2>
         <p id="survey-confirm-description">
-          Após confirmar, sua participação será marcada como concluída nesta demonstração. Nenhuma resposta será enviada.
+          Após confirmar, suas respostas serão enviadas uma única vez e sua participação será registrada junto com a submissão.
         </p>
         <div className="survey-dialog__actions">
-          <button className="survey-button survey-button--secondary" onClick={onCancel} type="button">
+          <button className="survey-button survey-button--secondary" disabled={isSubmitting} onClick={onCancel} type="button">
             Voltar
           </button>
-          <button className="survey-button survey-button--primary" onClick={onConfirm} ref={confirmButtonRef} type="button">
-            Confirmar envio
+          <button className="survey-button survey-button--primary" disabled={isSubmitting} onClick={onConfirm} ref={confirmButtonRef} type="button">
+            {isSubmitting ? "Enviando…" : "Confirmar envio"}
           </button>
         </div>
       </section>

@@ -24,6 +24,7 @@ function adaptQuestion(question: ApiQuestion, sectionId: string): SurveyQuestion
     text: question.text,
     required: question.required,
     helperText: question.helper_text ?? undefined,
+    optionSource: question.option_source,
     placeholder: question.placeholder ?? undefined,
     lowLabel: question.low_label ?? undefined,
     highLabel: question.high_label ?? undefined,
@@ -51,3 +52,25 @@ export function getParticipationStatus(code: string) {
 }
 
 export type { SurveyAnswer };
+
+
+export type OrganizationRegional = { code: string; label: string };
+export type OrganizationServiceCenter = { code: string; name: string; display_name: string };
+export type SurveySubmissionAnswer = { question_code: string; option_codes?: string[]; text_value?: string };
+
+export function getOrganizationRegionals() {
+  return apiRequest<{ regionals: OrganizationRegional[] }>("/api/organization/regionals");
+}
+
+export function getOrganizationServiceCenters(regionalCode: string) {
+  return apiRequest<{ regional_code: string; service_centers: OrganizationServiceCenter[] }>(
+    `/api/organization/regionals/${encodeURIComponent(regionalCode)}/scs`,
+  );
+}
+
+export function submitSurveyResponses(code: string, answers: SurveySubmissionAnswer[]) {
+  return apiRequest<{ submitted: true }>(`/api/surveys/${encodeURIComponent(code)}/responses`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}

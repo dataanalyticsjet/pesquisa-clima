@@ -28,6 +28,7 @@ export type SurveyQuestion = {
   text: string;
   required: boolean;
   helperText?: string;
+  optionSource?: string;
   placeholder?: string;
   options?: SurveyOption[];
   lowLabel?: string;

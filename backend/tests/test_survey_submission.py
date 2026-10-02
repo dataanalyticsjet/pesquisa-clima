@@ -85,7 +85,6 @@ class FakeOrganizationCatalog(OrganizationCatalogService):
         expected = {
             ("ORG_REGIONAL", "R1", None, None),
             ("ORG_BASE", "B1", "R1", None),
-            ("ORG_CNPJ", "C1", "R1", "B1"),
         }
         return (option_source, option_code, regional_code, base_code) in expected
 
@@ -120,6 +119,7 @@ def option(question_id, code, *, exclusive=False):
         id=question_id * 1000 + sum(ord(character) for character in code),
         question_id=question_id,
         code=code,
+        label="Não sei informar" if code == "unknown" else code,
         is_exclusive=exclusive,
     )
 
@@ -147,10 +147,15 @@ def definition():
 
 
 def valid_answers(*, cnpj="unknown", multi=None):
+    q3 = (
+        {"question_code": "Q03", "option_codes": ["unknown"]}
+        if cnpj == "unknown"
+        else {"question_code": "Q03", "text_value": cnpj}
+    )
     return [
         {"question_code": "Q01", "option_codes": ["R1"]},
         {"question_code": "Q02", "option_codes": ["B1"]},
-        {"question_code": "Q03", "option_codes": [cnpj]},
+        q3,
         {"question_code": "Q04", "option_codes": ["5"]},
         {"question_code": "Q05", "option_codes": ["A"]},
         {"question_code": "Q06", "option_codes": multi or ["A", "B"]},
@@ -257,27 +262,65 @@ def test_validated_org_codes_are_text_values_and_segments_are_anonymous(monkeypa
         session,
         "CLIMATE_2026",
         801,
-        submission(valid_answers(cnpj="C1")),
+        submission(valid_answers(cnpj="00.000.000/E08G-12")),
         organization_catalog=catalog,
     )
 
     rows = session.committed
     org_answers = {row.question_id: row for row in rows if isinstance(row, ResponseAnswer) and row.question_id in {1, 2, 3}}
-    assert {key: value.text_value for key, value in org_answers.items()} == {1: "R1", 2: "B1", 3: "C1"}
+    assert {key: value.text_value for key, value in org_answers.items()} == {1: "R1", 2: "B1", 3: "00000000E08G12"}
     assert not any(isinstance(row, ResponseAnswerOption) and row.question_id in {1, 2, 3} for row in rows)
     assert {row.segment_type: row.segment_code for row in rows if isinstance(row, AnonymousResponseSegment)} == {
-        "REGIONAL": "R1", "BASE": "B1", "CNPJ": "C1"
+        "REGIONAL": "R1", "BASE": "B1", "CNPJ": "00000000E08G12"
     }
     assert catalog.calls == [
         ("ORG_REGIONAL", "R1", None, None),
         ("ORG_BASE", "B1", "R1", None),
-        ("ORG_CNPJ", "C1", "R1", "B1"),
     ]
 
 
+
+def test_invalid_cnpj_format_and_check_digits_are_rejected(monkeypatch):
+    for value in ("123", "00.000.000/E08G-13", "00.000.000/E08@-12", "00000000E08GAB"):
+        session, _, _ = configure_service(monkeypatch)
+        with pytest.raises(SurveySubmissionError, match="INVALID_ANSWER"):
+            submission_service.submit_survey(
+                session,
+                "CLIMATE_2026",
+                801,
+                submission(valid_answers(cnpj=value)),
+                organization_catalog=FakeOrganizationCatalog(),
+            )
+        assert session.commit_count == 0 and session.rollback_count == 1
+
+
+def test_numeric_cnpj_is_normalized_and_segmented(monkeypatch):
+    session, _, _ = configure_service(monkeypatch)
+    submission_service.submit_survey(
+        session, "CLIMATE_2026", 801,
+        submission(valid_answers(cnpj="11.222.333/0001-81")),
+        organization_catalog=FakeOrganizationCatalog(),
+    )
+    rows = session.committed
+    q3 = next(row for row in rows if isinstance(row, ResponseAnswer) and row.question_id == 3)
+    assert q3.text_value == "11222333000181"
+    cnpj_segment = next(row for row in rows if isinstance(row, AnonymousResponseSegment) and row.segment_type == "CNPJ")
+    assert cnpj_segment.segment_code == "11222333000181"
+
+
+def test_unknown_and_cnpj_cannot_be_submitted_together(monkeypatch):
+    session, _, _ = configure_service(monkeypatch)
+    answers = valid_answers()
+    answers[2] = {"question_code": "Q03", "option_codes": ["unknown"], "text_value": "11222333000181"}
+    with pytest.raises(SurveySubmissionError, match="INVALID_ANSWER"):
+        submission_service.submit_survey(
+            session, "CLIMATE_2026", 801, submission(answers), organization_catalog=FakeOrganizationCatalog()
+        )
+    assert session.added == [] and session.rollback_count == 1
+
 def test_organization_hierarchy_validation_does_not_depend_on_payload_order(monkeypatch):
     session, _, _ = configure_service(monkeypatch)
-    answers = valid_answers(cnpj="C1")
+    answers = valid_answers(cnpj="00.000.000/E08G-12")
 
     submission_service.submit_survey(
         session,
@@ -290,20 +333,19 @@ def test_organization_hierarchy_validation_does_not_depend_on_payload_order(monk
     assert session.commit_count == 1
 
 
-def test_organization_catalog_unavailable_blocks_submission_before_any_write(monkeypatch):
+def test_cnpj_is_validated_without_catalog_lookup(monkeypatch):
     session, _, _ = configure_service(monkeypatch)
+    catalog = FakeOrganizationCatalog()
 
-    with pytest.raises(SurveySubmissionError, match="ORGANIZATION_CATALOG_UNAVAILABLE"):
-        submission_service.submit_survey(
-            session,
-            "CLIMATE_2026",
-            801,
-            submission(),
-            organization_catalog=FakeOrganizationCatalog(available=False),
-        )
+    submission_service.submit_survey(
+        session,
+        "CLIMATE_2026",
+        801,
+        submission(valid_answers(cnpj="00.000.000/E08G-12")),
+        organization_catalog=catalog,
+    )
 
-    assert session.added == [] and session.committed == []
-    assert session.commit_count == 0 and session.rollback_count == 1
+    assert [call[0] for call in catalog.calls] == ["ORG_REGIONAL", "ORG_BASE"]
 
 
 def test_wrong_organization_hierarchy_is_invalid_option(monkeypatch):
@@ -383,7 +425,7 @@ def test_any_persistence_failure_rolls_back_instead_of_orphaning_response(monkey
             session,
             "CLIMATE_2026",
             801,
-            submission(valid_answers(cnpj="C1")),
+            submission(valid_answers(cnpj="00.000.000/E08G-12")),
             organization_catalog=FakeOrganizationCatalog(),
         )
 
