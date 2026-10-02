@@ -19,8 +19,7 @@
 }
 
 .employee-home__management-link:focus-visible,
-.management-nav__link:focus-visible,
-.management-secondary-button:focus-visible {
+.management-nav__link:focus-visible {
   outline: 3px solid rgb(230 0 18 / 32%);
   outline-offset: 3px;
 }
@@ -137,7 +136,6 @@
 .management-metric,
 .pillar-score-card,
 .attention-card,
-.action-plan-card,
 .adherence-panel,
 .management-section--chart {
   min-width: 0;
@@ -206,8 +204,7 @@
 }
 
 .pillar-score-card__top,
-.attention-card__top,
-.action-plan-card__header {
+.attention-card__top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -215,8 +212,7 @@
 }
 
 .pillar-score-card h2,
-.attention-card h2,
-.action-plan-card h2 {
+.attention-card h2 {
   margin: 0;
   font-size: 1.02rem;
   line-height: 1.4;
@@ -362,9 +358,6 @@
 .status-badge--critical { border-color: #f2c8cb; color: #9d1c27; background: #fff1f2; }
 .status-badge--attention { border-color: #f0dfb7; color: #855407; background: #fff9e9; }
 .status-badge--healthy { border-color: #cce8d4; color: #176735; background: #effaf2; }
-.status-badge--in-progress { border-color: #f0dfb7; color: #855407; background: #fff9e9; }
-.status-badge--planned { color: var(--color-text-secondary); }
-.status-badge--completed { border-color: #cce8d4; color: #176735; background: #effaf2; }
 
 .attention-card__question {
   padding: var(--space-3);
@@ -552,17 +545,6 @@
 .management-privacy-note__icon { display: grid; width: 20px; height: 20px; flex: 0 0 auto; place-items: center; border: 1px solid var(--color-text-muted); border-radius: 50%; color: var(--color-text-secondary); font-size: 0.75rem; font-weight: 700; }
 .management-privacy-note p { margin: 0; color: var(--color-text-secondary); font-size: 0.84rem; line-height: 1.55; }
 
-.action-plan-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-.action-plan-card { display: grid; align-content: start; gap: var(--space-4); padding: var(--space-5); }
-.action-plan-card__header h2 { margin-top: var(--space-1); }
-.action-plan-card__details { display: grid; gap: var(--space-3); margin: 0; }
-.action-plan-card__details dt { margin-bottom: 2px; color: var(--color-text-muted); font-size: 0.72rem; font-weight: 650; }
-.action-plan-card__details dd { margin: 0; color: var(--color-text-secondary); font-size: 0.84rem; line-height: 1.5; }
-.action-plan-card__goal { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-secondary); color: var(--color-text-secondary); font-size: 0.78rem; }
-.action-plan-card__goal strong { margin-left: var(--space-1); color: var(--color-text-primary); font-size: 1rem; }
-.management-secondary-button { justify-self: start; min-height: 38px; padding: 0 var(--space-4); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); color: var(--color-text-primary); background: var(--color-surface); font-size: 0.82rem; font-weight: 650; }
-.management-secondary-button:hover { border-color: var(--color-brand); color: var(--color-brand); }
-
 @media (max-width: 1050px) {
   .pillar-score-grid--overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .attention-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -578,8 +560,7 @@
   .management-metric__value { font-size: 1.55rem; }
   .pillar-score-grid,
   .pillar-score-grid--overview,
-  .attention-grid,
-  .action-plan-grid { grid-template-columns: minmax(0, 1fr); }
+  .attention-grid { grid-template-columns: minmax(0, 1fr); }
   .attention-grid > :last-child:nth-child(odd) { grid-column: auto; }
   .management-section--chart { padding: var(--space-4); }
   .trend-chart svg { min-height: 150px; }

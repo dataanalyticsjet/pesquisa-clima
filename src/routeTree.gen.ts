@@ -14,7 +14,6 @@ import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManagementRouteImport } from './routes/management'
 import { Route as ManagementIndexRouteImport } from './routes/management.index'
-import { Route as ManagementActionPlansRouteImport } from './routes/management.action-plans'
 import { Route as ManagementAdherenceRouteImport } from './routes/management.adherence'
 import { Route as ManagementAttentionRouteImport } from './routes/management.attention'
 import { Route as ManagementPillarsRouteImport } from './routes/management.pillars'
@@ -44,11 +43,6 @@ const ManagementRoute = ManagementRouteImport.update({
 const ManagementIndexRoute = ManagementIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ManagementRoute,
-} as any)
-const ManagementActionPlansRoute = ManagementActionPlansRouteImport.update({
-  id: '/action-plans',
-  path: '/action-plans',
   getParentRoute: () => ManagementRoute,
 } as any)
 const ManagementAdherenceRoute = ManagementAdherenceRouteImport.update({
@@ -82,7 +76,6 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
-  '/management/action-plans': typeof ManagementActionPlansRoute
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
@@ -94,7 +87,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
-  '/management/action-plans': typeof ManagementActionPlansRoute
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
@@ -108,7 +100,6 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
-  '/management/action-plans': typeof ManagementActionPlansRoute
   '/management/adherence': typeof ManagementAdherenceRoute
   '/management/attention': typeof ManagementAttentionRoute
   '/management/pillars': typeof ManagementPillarsRoute
@@ -123,7 +114,6 @@ export interface FileRouteTypes {
     | '/home'
     | '/login'
     | '/management'
-    | '/management/action-plans'
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
@@ -135,7 +125,6 @@ export interface FileRouteTypes {
     | '/'
     | '/home'
     | '/login'
-    | '/management/action-plans'
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
@@ -148,7 +137,6 @@ export interface FileRouteTypes {
     | '/home'
     | '/login'
     | '/management'
-    | '/management/action-plans'
     | '/management/adherence'
     | '/management/attention'
     | '/management/pillars'
@@ -202,13 +190,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementIndexRouteImport
       parentRoute: typeof ManagementRoute
     }
-    '/management/action-plans': {
-      id: '/management/action-plans'
-      path: '/action-plans'
-      fullPath: '/management/action-plans'
-      preLoaderRoute: typeof ManagementActionPlansRouteImport
-      parentRoute: typeof ManagementRoute
-    }
     '/management/adherence': {
       id: '/management/adherence'
       path: '/adherence'
@@ -248,7 +229,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface ManagementRouteChildren {
-  ManagementActionPlansRoute: typeof ManagementActionPlansRoute
   ManagementAdherenceRoute: typeof ManagementAdherenceRoute
   ManagementAttentionRoute: typeof ManagementAttentionRoute
   ManagementPillarsRoute: typeof ManagementPillarsRoute
@@ -257,7 +237,6 @@ interface ManagementRouteChildren {
 }
 
 const ManagementRouteChildren: ManagementRouteChildren = {
-  ManagementActionPlansRoute: ManagementActionPlansRoute,
   ManagementAdherenceRoute: ManagementAdherenceRoute,
   ManagementAttentionRoute: ManagementAttentionRoute,
   ManagementPillarsRoute: ManagementPillarsRoute,

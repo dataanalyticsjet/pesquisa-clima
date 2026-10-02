@@ -7,7 +7,6 @@ const managementLinks = [
   { to: "/management/attention", label: "Pontos de Atenção" },
   { to: "/management/adherence", label: "Adesão" },
   { to: "/management/voice", label: "Sua Voz" },
-  { to: "/management/action-plans", label: "Planos de Ação" },
 ] as const;
 
 export function ManagementNav() {

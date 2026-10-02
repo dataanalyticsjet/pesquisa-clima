@@ -206,13 +206,6 @@ const priorityItems = [
   { regional: "SPN", area: "Transferência / SC", pillarId: "lideranca", score: 52, base: "DEMO-SPN-02", cnpj: "DEMO-CNPJ-02-02" },
 ] as const;
 
-const actionPlans = [
-  { id: "plan-remuneracao", scope: "SPS / Operações", regional: "SPS", area: "Operações", base: "DEMO-SPS-01", cnpj: "DEMO-CNPJ-01-01", pillar: "Remuneração e Benefícios", problem: "Percepção de compatibilidade remuneratória abaixo da referência demo.", action: "Realizar estudo de competitividade e revisar faixas prioritárias.", owner: "People + Remuneração", dueDate: "30/11/2026", status: "PLANNED" as const, currentScore: 41, targetScore: 60 },
-  { id: "plan-reconhecimento", scope: "SPS / Operações", regional: "SPS", area: "Operações", base: "DEMO-SPS-01", cnpj: "DEMO-CNPJ-01-01", pillar: "Reconhecimento e Desenvolvimento", problem: "Percepção de reconhecimento e desenvolvimento abaixo da referência demo.", action: "Estruturar rotina mensal de reconhecimento e feedback.", owner: "People + Operações", dueDate: "15/12/2026", status: "IN_PROGRESS" as const, currentScore: 44, targetScore: 65 },
-  { id: "plan-lideranca-regional", scope: "Regional — SPN", regional: "SPN", area: "Transferência / SC", base: "DEMO-SPN-02", cnpj: "DEMO-CNPJ-02-02", pillar: "Liderança e Comunicação", problem: "Aprimorar o acompanhamento de feedback e alinhamento operacional.", action: "Estabelecer rotina de feedback e alinhamento operacional.", owner: "Operações", dueDate: "20/12/2026", status: "PLANNED" as const, currentScore: 52, targetScore: 68 },
-  { id: "plan-jornada", scope: "SPS / Operações", regional: "SPS", area: "Operações", base: "DEMO-SPS-01", cnpj: "DEMO-CNPJ-01-01", pillar: "Jornada de Trabalho", problem: "Jornada estendida e volume elevado de trabalho no recorte demo.", action: "Revisar distribuição de atividades e dimensionamento da equipe.", owner: "Operações + People", dueDate: "31/12/2026", status: "PLANNED" as const, currentScore: 52, targetScore: 70 },
-];
-
 export const mockManagement = {
   survey: {
     title: mockSurvey.title,
@@ -233,7 +226,6 @@ export const mockManagement = {
   segments,
   attention,
   priorityItems,
-  actionPlans,
   regionalAdherence: [
     { region: "SPS", adherence: 82 }, { region: "SPE", adherence: 79 },
     { region: "PR", adherence: 77 }, { region: "MG", adherence: 74 },
@@ -260,8 +252,6 @@ export const mockManagement = {
     ],
   },
 };
-
-export type ManagementActionPlan = (typeof mockManagement.actionPlans)[number];
 
 export function filterManagementSegments(filters: ManagementFilters) {
   return mockManagement.segments.filter((segment) =>
@@ -297,14 +287,5 @@ export function filterManagementPriorities(filters: ManagementFilters) {
     && (!filters.area || item.area === filters.area)
     && (!filters.base || item.base === filters.base)
     && (!filters.cnpj || item.cnpj === filters.cnpj),
-  );
-}
-
-export function filterManagementPlans(filters: ManagementFilters) {
-  return mockManagement.actionPlans.filter((plan) =>
-    (!filters.regional || plan.regional === filters.regional)
-    && (!filters.area || plan.area === filters.area)
-    && (!filters.base || plan.base === filters.base)
-    && (!filters.cnpj || plan.cnpj === filters.cnpj),
   );
 }
