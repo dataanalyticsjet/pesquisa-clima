@@ -34,11 +34,11 @@ export function ManagementNav() {
   );
 }
 
-export function ManagementLayout({ children }: { children: React.ReactNode }) {
+export function ManagementLayout({ children, showDemoFilters = true }: { children: React.ReactNode; showDemoFilters?: boolean }) {
   return (
     <div className="management-layout">
       <ManagementNav />
-      <ManagementFiltersBar />
+      {showDemoFilters && <ManagementFiltersBar />}
       {children}
     </div>
   );
