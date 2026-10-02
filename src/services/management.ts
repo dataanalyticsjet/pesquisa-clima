@@ -30,6 +30,40 @@ export type ManagementOverviewResponse = {
   invited_population_source_configured: boolean;
 };
 
+export type ManagementAttentionQuestion = {
+  question_code: string;
+  question_text: string;
+  analytics_available: boolean;
+  attention_rate: number | null;
+  respondent_count: number | null;
+};
+
+export type ManagementAttentionSC = {
+  sc_code: string;
+  sc_name: string;
+  display_name: string;
+  attention_rate: number | null;
+  analytics_available: boolean;
+  respondent_count: number | null;
+  questions: ManagementAttentionQuestion[];
+};
+
+export type ManagementAttentionRegional = {
+  regional_code: string;
+  attention_rate: number | null;
+  analytics_available: boolean;
+  respondent_count: number | null;
+  questions: ManagementAttentionQuestion[];
+  scs: ManagementAttentionSC[];
+};
+
+export type ManagementAttentionResponse = {
+  survey_code: string;
+  survey_status: string;
+  min_group_size: number;
+  regionals: ManagementAttentionRegional[];
+};
+
 export function getManagementPillars(surveyCode: string) {
   return apiRequest<ManagementPillarsResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/pillars`,
@@ -39,5 +73,11 @@ export function getManagementPillars(surveyCode: string) {
 export function getManagementOverview(surveyCode: string) {
   return apiRequest<ManagementOverviewResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/overview`,
+  );
+}
+
+export function getManagementAttention(surveyCode: string) {
+  return apiRequest<ManagementAttentionResponse>(
+    `/api/management/surveys/${encodeURIComponent(surveyCode)}/attention`,
   );
 }

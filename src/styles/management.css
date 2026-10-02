@@ -427,6 +427,90 @@
   animation: management-pillars-spin 750ms linear infinite;
 }
 @keyframes management-pillars-spin { to { transform: rotate(360deg); } }
+
+.management-attention-summary {
+  margin: calc(-1 * var(--space-4)) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.management-attention-regionals { display: grid; gap: var(--space-5); }
+.management-attention-regional {
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.management-attention-regional__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+.management-attention-regional__header h2 {
+  margin: var(--space-1) 0 0;
+  font-size: 1.2rem;
+}
+.management-attention-metric {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+.management-attention-metric small { font-size: 0.74rem; line-height: 1.4; }
+.management-attention-metric strong { color: var(--color-text-primary); font-size: 1.15rem; line-height: 1.25; }
+.management-attention-metric--suppressed strong { font-size: 0.84rem; }
+.management-attention-metric--suppressed small { color: var(--color-text-muted); }
+.management-attention-metric.is-compact strong { font-size: 0.9rem; }
+.management-attention-metric.is-compact small { font-size: 0.7rem; }
+.management-attention-questions-disclosure {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.management-attention-questions-disclosure > summary {
+  padding: var(--space-3) 0;
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.management-attention-questions-disclosure > summary span { color: var(--color-text-muted); font-weight: 500; }
+.management-attention-scs { display: grid; gap: var(--space-3); padding-top: var(--space-4); }
+.management-attention-sc {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+}
+.management-attention-sc__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  cursor: pointer;
+}
+.management-attention-sc__name { min-width: 0; color: var(--color-text-primary); font-size: 0.9rem; font-weight: 650; line-height: 1.45; }
+.management-attention-sc[open] > .management-attention-sc__summary { border-bottom: 1px solid var(--color-border); }
+.management-attention-questions { display: grid; gap: 0; margin: 0; padding: 0 var(--space-4); list-style: none; }
+.management-attention-question {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.management-attention-question:last-child { border-bottom: 0; }
+.management-attention-question__copy { min-width: 0; }
+.management-attention-question__copy > span { color: var(--color-text-muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; }
+.management-attention-question__copy p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); font-size: 0.83rem; line-height: 1.5; overflow-wrap: anywhere; }
+.management-attention-empty { margin: 0; padding: var(--space-4); color: var(--color-text-muted); font-size: 0.82rem; }
+
 .management-pillar-api-card__heading { min-width: 0; }
 .management-pillar-api-card__questions {
   margin: var(--space-1) 0 0;
@@ -504,6 +588,11 @@
   .adherence-panel { padding: var(--space-4); }
   .adherence-row { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: var(--space-2); }
   .management-page-title { align-items: start; }
+  .management-attention-regional { padding: var(--space-4); }
+  .management-attention-sc__summary { padding: var(--space-3); }
+  .management-attention-question { grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--space-2); }
+  .management-attention-metric { justify-items: start; text-align: left; }
+  .management-attention-sc__summary > .management-attention-metric { justify-items: end; text-align: right; }
   .management-nav__links { margin-inline: calc(-1 * var(--space-1)); padding-inline: var(--space-1); }
   .management-nav__link { min-height: 42px; padding-inline: var(--space-2); font-size: 0.8rem; }
 }
