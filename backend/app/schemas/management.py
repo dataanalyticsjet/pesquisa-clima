@@ -15,3 +15,23 @@ class ManagementSurveyOverviewResponse(BaseModel):
     invited_count: int | None
     adherence_percent: float | None
     invited_population_source_configured: bool
+
+
+class ManagementPillarResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    title: str
+    question_count: int
+    respondent_count: int
+    analytics_available: bool
+    index: float | None
+
+
+class ManagementSurveyPillarsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    survey_code: str
+    survey_status: str
+    min_group_size: int
+    pillars: list[ManagementPillarResponse]
