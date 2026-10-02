@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SurveyCard } from "../components/survey/SurveyCard";
 import { SurveyPrivacyNote } from "../components/survey/SurveyPrivacyNote";
 import { ApiError } from "../lib/api";
-import { getCurrentUser, logout, type AuthUser } from "../services/auth";
+import { getCurrentUser, type AuthUser } from "../services/auth";
 import { getParticipationStatus, getSurveyDefinition, type ParticipationStatus, type SurveyDefinition } from "../services/surveys";
-import { useSurveyDemo } from "../components/survey/SurveyDemoContext";
+import { canAccessManagement, clearFeishuPostLoginRedirect, hasFeishuPostLoginRedirect } from "../lib/roleNavigation";
 
 export const Route = createFileRoute("/home")({
   component: CollaboratorHome,
@@ -13,14 +13,22 @@ export const Route = createFileRoute("/home")({
 
 function CollaboratorHome() {
   const navigate = useNavigate();
-  const { resetAnswers } = useSurveyDemo();
   const [data, setData] = useState<{ user: AuthUser; survey: SurveyDefinition; participation: ParticipationStatus } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    const shouldRedirectFeishuManagement = hasFeishuPostLoginRedirect();
     getCurrentUser().then(async ({ user }) => {
+      if (!active) return;
+      if (shouldRedirectFeishuManagement) {
+        clearFeishuPostLoginRedirect();
+        if (canAccessManagement(user.roles)) {
+          void navigate({ to: "/management", replace: true });
+          return;
+        }
+      }
       const [survey, participation] = await Promise.all([getSurveyDefinition("CLIMATE_2026"), getParticipationStatus("CLIMATE_2026")]);
       if (active) setData({ user, survey, participation });
     }).catch((reason: unknown) => {
@@ -33,24 +41,10 @@ function CollaboratorHome() {
     return () => { active = false; };
   }, [navigate]);
 
-  async function handleLogout() {
-    try {
-      await logout();
-      resetAnswers();
-      await navigate({ to: "/login", replace: true });
-    } catch {
-      setError("Não foi possível encerrar sua sessão agora. Tente novamente.");
-    }
-  }
-
   if (loading) return <p role="status" className="api-state">Carregando suas informações…</p>;
   if (error || !data) return <p role="alert" className="api-state">{error || "Não foi possível carregar as informações."}</p>;
   const firstName = data.user.name.trim().split(/\s+/)[0] ?? "Colaborador";
   const displayName = firstName ? firstName.charAt(0).toLocaleUpperCase("pt-BR") + firstName.slice(1).toLocaleLowerCase("pt-BR") : "Colaborador";
-  const canViewManagement = data.user.roles.some((role) =>
-    ["MANAGEMENT", "SURVEY_ADMIN", "ADMIN"].includes(role),
-  );
-
   return (
     <div className="employee-page employee-home">
       <section className="employee-home__intro" aria-labelledby="employee-home-title">
@@ -64,12 +58,6 @@ function CollaboratorHome() {
         <SurveyPrivacyNote />
       </div>
 
-      {canViewManagement && (
-        <Link className="employee-home__management-link" to="/management">
-          Visão Gestão
-        </Link>
-      )}
-      <button className="employee-home__logout" onClick={handleLogout} type="button">Sair</button>
     </div>
   );
 }

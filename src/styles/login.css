@@ -61,12 +61,14 @@
   box-shadow: var(--shadow-lg);
 }
 
-.login-card__brand {
-  margin: 0;
-  color: var(--color-brand);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.13em;
+.login-card__logo {
+  display: block;
+  max-width: 100%;
+  width: 176px;
+  height: 72px;
+  margin-inline: auto;
+  object-fit: contain;
+  object-position: center;
 }
 
 .login-card__title {
@@ -143,7 +145,6 @@
 }
 
 .login-button:focus-visible,
-.login-help-links button:focus-visible,
 .login-code-back:focus-visible,
 .login-email-form input:focus-visible {
   outline: 3px solid rgb(230 0 18 / 34%);
@@ -235,30 +236,6 @@
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.55;
-}
-
-.login-help-links {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  color: var(--color-text-secondary);
-  font-size: 0.84rem;
-}
-
-.login-help-links button {
-  padding: 0;
-  border: 0;
-  color: inherit;
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
-}
-
-.login-help-links button:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 @media (max-width: 900px) {

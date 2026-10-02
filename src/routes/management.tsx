@@ -1,11 +1,10 @@
 import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ApiError } from "../lib/api";
+import { canAccessManagement } from "../lib/roleNavigation";
 import { getCurrentUser } from "../services/auth";
 
 export const Route = createFileRoute("/management")({ component: ManagementShell });
-
-const managementRoles = ["MANAGEMENT", "SURVEY_ADMIN", "ADMIN"];
 
 function ManagementShell() {
   const navigate = useNavigate();
@@ -15,7 +14,7 @@ function ManagementShell() {
     let active = true;
     getCurrentUser().then(({ user }) => {
       if (!active) return;
-      if (user.roles.some((role) => managementRoles.includes(role))) {
+      if (canAccessManagement(user.roles)) {
         setAccess("allowed");
       } else {
         void navigate({ to: "/home", replace: true });

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LanguageSelector } from "../components/layout/LanguageSelector";
 import { ApiError, apiUrl } from "../lib/api";
+import { clearFeishuPostLoginRedirect, getAuthenticatedLandingPath, markFeishuPostLoginRedirect } from "../lib/roleNavigation";
 import { getCurrentUser, requestEmailCode, verifyEmailCode } from "../services/auth";
 
 export const Route = createFileRoute("/login")({
@@ -18,6 +19,7 @@ function LoginPage() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
+    clearFeishuPostLoginRedirect();
     const authError = new URLSearchParams(window.location.search).get("auth_error");
     if (authError) {
       const messages: Record<string, string> = {
@@ -28,8 +30,8 @@ function LoginPage() {
       setNotice(messages[authError] ?? "Não foi possível concluir o acesso pelo Feishu. Tente novamente.");
     }
     let active = true;
-    getCurrentUser().then(() => {
-      if (active) void navigate({ to: "/home", replace: true });
+    getCurrentUser().then(({ user }) => {
+      if (active) void navigate({ to: getAuthenticatedLandingPath(user.roles), replace: true });
     }).catch(() => undefined);
     return () => { active = false; };
   }, [navigate]);
@@ -45,7 +47,8 @@ function LoginPage() {
         setNotice("Se o endereço puder receber acesso, enviaremos um código. Verifique seu e-mail.");
       } else {
         await verifyEmailCode(email, code);
-        await navigate({ to: "/home", replace: true });
+        const { user } = await getCurrentUser();
+        await navigate({ to: getAuthenticatedLandingPath(user.roles), replace: true });
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 503) {
@@ -61,6 +64,7 @@ function LoginPage() {
   }
 
   function handleFeishuLogin() {
+    markFeishuPostLoginRedirect();
     window.location.href = apiUrl("/api/auth/feishu/login");
   }
 
@@ -69,7 +73,7 @@ function LoginPage() {
       <LanguageSelector className="login-page__languages" />
       <div className="login-page__content">
         <section className="login-card" aria-labelledby="login-title">
-          <p className="login-card__brand">J&amp;T EXPRESS</p>
+          <img className="login-card__logo" src="/jt-express-logo.png" alt="J&T Express" />
           <h1 className="login-card__title" id="login-title">
             Acesse a plataforma
           </h1>
@@ -78,7 +82,7 @@ function LoginPage() {
             Ambiente sigiloso para ouvir, entender e acompanhar a experiência dos colaboradores.
           </p>
 
-              <button
+          <button
             className="login-button login-button--primary"
             type="button"
             onClick={handleFeishuLogin}
@@ -179,21 +183,6 @@ function LoginPage() {
             </p>
           </div>
 
-          <nav className="login-help-links" aria-label="Acesso e ajuda">
-            <button
-              type="button"
-              onClick={() => setNotice("Solicitações de acesso serão disponibilizadas em uma próxima etapa.")}
-            >
-              Solicitar acesso
-            </button>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              onClick={() => setNotice("As informações de ajuda serão disponibilizadas em uma próxima etapa.")}
-            >
-              Preciso de ajuda
-            </button>
-          </nav>
         </section>
       </div>
     </div>
