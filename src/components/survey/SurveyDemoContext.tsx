@@ -1,31 +1,28 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { SurveyAnswer } from "../../data/mockSurvey";
 
-export type SurveyStep = "intro" | "questions" | "review" | "success";
+export type SurveyStep = "intro" | "questions" | "review";
 
 type SurveyDemoContextValue = {
   answers: Record<string, SurveyAnswer>;
-  isCompleted: boolean;
   currentQuestionIndex: number;
   step: SurveyStep;
   setAnswer: (questionId: string, value: SurveyAnswer) => void;
   setCurrentQuestionIndex: (index: number) => void;
   setStep: (step: SurveyStep) => void;
-  completeSurvey: () => void;
+  resetAnswers: () => void;
 };
 
 const SurveyDemoContext = createContext<SurveyDemoContextValue | null>(null);
 
 export function SurveyDemoProvider({ children }: { children: ReactNode }) {
   const [answers, setAnswers] = useState<Record<string, SurveyAnswer>>({});
-  const [isCompleted, setIsCompleted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<SurveyStep>("intro");
 
   const value = useMemo(
     () => ({
       answers,
-      isCompleted,
       currentQuestionIndex,
       step,
       setAnswer: (questionId: string, response: SurveyAnswer) => {
@@ -33,12 +30,13 @@ export function SurveyDemoProvider({ children }: { children: ReactNode }) {
       },
       setCurrentQuestionIndex,
       setStep,
-      completeSurvey: () => {
-        setIsCompleted(true);
-        setStep("success");
+      resetAnswers: () => {
+        setAnswers({});
+        setCurrentQuestionIndex(0);
+        setStep("intro");
       },
     }),
-    [answers, currentQuestionIndex, isCompleted, step],
+    [answers, currentQuestionIndex, step],
   );
 
   return <SurveyDemoContext.Provider value={value}>{children}</SurveyDemoContext.Provider>;

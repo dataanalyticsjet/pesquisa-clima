@@ -1,8 +1,5 @@
 import { Link } from "@tanstack/react-router";
 
-// Future API integration may provide eligible = true/false and
-// participation_status = NOT_STARTED / IN_PROGRESS / COMPLETED.
-// This component is presentational only and does not enforce participation limits.
 export function SurveyAlreadyCompleted() {
   return (
     <section className="survey-success survey-already-completed" aria-labelledby="survey-already-completed-title">

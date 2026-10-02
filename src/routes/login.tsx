@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LanguageSelector } from "../components/layout/LanguageSelector";
+import { ApiError, apiUrl } from "../lib/api";
+import { getCurrentUser, requestEmailCode, verifyEmailCode } from "../services/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -10,19 +12,56 @@ function LoginPage() {
   const navigate = useNavigate();
   const [emailFormOpen, setEmailFormOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
-  function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const authError = new URLSearchParams(window.location.search).get("auth_error");
+    if (authError) {
+      const messages: Record<string, string> = {
+        feishu_disabled: "O acesso pelo Feishu está temporariamente indisponível.",
+        invalid_state: "Não foi possível validar o acesso. Inicie novamente pelo Feishu.",
+        expired_state: "A solicitação de acesso expirou. Inicie novamente pelo Feishu.",
+      };
+      setNotice(messages[authError] ?? "Não foi possível concluir o acesso pelo Feishu. Tente novamente.");
+    }
+    let active = true;
+    getCurrentUser().then(() => {
+      if (active) void navigate({ to: "/home", replace: true });
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [navigate]);
+
+  async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // DEMO ONLY
-    // Replace with real email OTP flow when authentication is implemented.
-    void navigate({ to: "/home" });
+    setNotice("");
+    setIsBusy(true);
+    try {
+      if (!codeRequested) {
+        await requestEmailCode(email);
+        setCodeRequested(true);
+        setNotice("Se o endereço puder receber acesso, enviaremos um código. Verifique seu e-mail.");
+      } else {
+        await verifyEmailCode(email, code);
+        await navigate({ to: "/home", replace: true });
+      }
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 503) {
+        setNotice("Não foi possível concluir o acesso agora. Tente novamente em alguns minutos.");
+      } else if (error instanceof ApiError && (error.status === 400 || error.status === 403 || error.status === 409 || error.status === 422)) {
+        setNotice("Não foi possível validar o acesso. Confira os dados ou solicite um novo código.");
+      } else {
+        setNotice("Não foi possível conectar ao serviço de acesso. Tente novamente.");
+      }
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   function handleFeishuLogin() {
-    // DEMO ONLY
-    // Replace with real Feishu OAuth redirect.
-    void navigate({ to: "/home" });
+    window.location.href = apiUrl("/api/auth/feishu/login");
   }
 
   return (
@@ -39,7 +78,7 @@ function LoginPage() {
             Ambiente sigiloso para ouvir, entender e acompanhar a experiência dos colaboradores.
           </p>
 
-          <button
+              <button
             className="login-button login-button--primary"
             type="button"
             onClick={handleFeishuLogin}
@@ -101,19 +140,12 @@ function LoginPage() {
               onSubmit={handleEmailSubmit}
             >
               <label htmlFor="alternate-email">E-mail</label>
-              <input
-                autoComplete="email"
-                id="alternate-email"
-                name="email"
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="nome@empresa.com"
-                required
-                type="email"
-                value={email}
-              />
-              <button className="login-button login-button--email" type="submit">
-                Receber código de acesso
+              <input autoComplete="email" id="alternate-email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="nome@empresa.com" required type="email" value={email} disabled={codeRequested} />
+              {codeRequested && <><label htmlFor="alternate-code">Código de acesso</label><input id="alternate-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="[0-9]{6}" placeholder="Digite o código de 6 dígitos" required type="text" value={code} /></>}
+              <button className="login-button login-button--email" disabled={isBusy || (codeRequested && code.length !== 6)} type="submit">
+                {isBusy ? "Aguarde…" : codeRequested ? "Validar código" : "Receber código de acesso"}
               </button>
+              {codeRequested && <button className="login-code-back" type="button" onClick={() => { setCodeRequested(false); setCode(""); setNotice(""); }}>Usar outro e-mail</button>}
             </form>
           )}
 

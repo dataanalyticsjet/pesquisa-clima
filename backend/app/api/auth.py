@@ -43,8 +43,14 @@ def _configured_for_oauth() -> bool:
     )
 
 
-def _frontend_redirect(*, auth_error: str | None = None) -> RedirectResponse:
+def _frontend_redirect(*, auth_error: str | None = None, path: str | None = None) -> RedirectResponse:
     base = settings.frontend_base_url or "/"
+    if path is not None:
+        parts = urlsplit(base)
+        return RedirectResponse(
+            urlunsplit((parts.scheme, parts.netloc, path, "", "")),
+            status_code=303,
+        )
     if auth_error is None:
         return RedirectResponse(base, status_code=303)
     parts = urlsplit(base)
@@ -122,7 +128,7 @@ def feishu_callback(request: Request, code: str | None = None, state: str | None
 
     request.session.clear()
     request.session["user_id"] = user_id
-    return _frontend_redirect()
+    return _frontend_redirect(path="/home")
 
 
 @router.post("/external/request-code", response_model=ExternalCodeRequestResponse)

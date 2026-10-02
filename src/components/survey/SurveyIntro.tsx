@@ -1,17 +1,19 @@
-import { mockSurvey } from "../../data/mockSurvey";
+import type { SurveyDefinition } from "../../services/surveys";
 
 type SurveyIntroProps = {
   onStart: () => void;
+  survey: SurveyDefinition;
 };
 
-export function SurveyIntro({ onStart }: SurveyIntroProps) {
+export function SurveyIntro({ onStart, survey }: SurveyIntroProps) {
+  const paragraphs = (survey.intro_text ?? "").split(/\n\s*\n/).filter((paragraph) => paragraph.length > 0);
   return (
     <section className="survey-intro" aria-labelledby="survey-intro-title">
-      <div className="survey-intro__eyebrow">{mockSurvey.introduction[0]}</div>
-      <h1 id="survey-intro-title">{mockSurvey.title}</h1>
+      <div className="survey-intro__eyebrow">{paragraphs[0] ?? ""}</div>
+      <h1 id="survey-intro-title">{survey.title}</h1>
       <div className="survey-intro__description">
-        {mockSurvey.introduction.slice(1).map((paragraph, index) => (
-          <p className={index === 3 ? "survey-intro__official-privacy" : undefined} key={paragraph}>{paragraph}</p>
+        {paragraphs.slice(1).map((paragraph, index) => (
+          <p className={paragraph.toLocaleLowerCase("pt-BR").includes("anônima") ? "survey-intro__official-privacy" : undefined} key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
         ))}
       </div>
 
@@ -34,8 +36,8 @@ export function SurveyIntro({ onStart }: SurveyIntroProps) {
       </aside>
 
       <div className="survey-intro__facts" aria-label="Informações da pesquisa">
-        <span><strong>{mockSurvey.questions.length}</strong> perguntas</span>
-        <span><strong>{mockSurvey.sections.length}</strong> seções</span>
+        <span><strong>{survey.questions.length}</strong> perguntas</span>
+        <span><strong>{survey.sections.length}</strong> seções</span>
       </div>
 
       <button className="survey-button survey-button--primary" onClick={onStart} type="button">

@@ -183,7 +183,8 @@ def test_callback_exchanges_mock_code_and_sets_local_session(monkeypatch):
     _, state = login_and_capture_state()
     response = client.get("/api/auth/feishu/callback", params={"code": "mock-code", "state": state})
     assert response.status_code == 303
-    assert response.headers["location"] == settings.frontend_base_url
+    frontend = urlparse(settings.frontend_base_url)
+    assert response.headers["location"] == f"{frontend.scheme}://{frontend.netloc}/home"
     assert session.committed and session.closed
     assert decode_cookie_session(client) == {"user_id": 91}
 

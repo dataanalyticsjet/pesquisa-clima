@@ -1,20 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { mockSurvey } from "../../data/mockSurvey";
+import type { SurveyDefinition } from "../../services/surveys";
 
-export function SurveyCard({ completed }: { completed: boolean }) {
-  const questionCount = mockSurvey.questions.length;
+export function SurveyCard({ completed, survey }: { completed: boolean; survey: SurveyDefinition }) {
+  const questionCount = survey.questions.length;
   return (
     <article className={`survey-card${completed ? " survey-card--completed" : ""}`}>
       <div className="survey-card__topline">
         <span className="survey-card__eyebrow">Pesquisa disponível</span>
         <span className={`survey-status${completed ? " survey-status--completed" : ""}`}>
           <span className="survey-status__dot" aria-hidden="true" />
-          {completed ? "Concluída" : "Pesquisa ativa"}
+          {completed ? "Concluída" : survey.status === "ACTIVE" ? "Pesquisa ativa" : "Em desenvolvimento"}
         </span>
       </div>
 
-      <h2 className="survey-card__title">{mockSurvey.title}</h2>
-      <p className="survey-card__description">{mockSurvey.description}</p>
+      <h2 className="survey-card__title">{survey.title}</h2>
+      {survey.intro_text && <p className="survey-card__description">{survey.intro_text.split(/\n\s*\n/)[0]}</p>}
       {!completed && (
         <div className="survey-card__participation">
           <strong>Participação única</strong>
@@ -29,7 +29,7 @@ export function SurveyCard({ completed }: { completed: boolean }) {
         </div>
         <div>
           <dt>Seções</dt>
-          <dd>{mockSurvey.sections.length}</dd>
+          <dd>{survey.sections.length}</dd>
         </div>
       </dl>
 

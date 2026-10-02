@@ -1,20 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { getCurrentUser } from "../services/auth";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const authError = new URLSearchParams(window.location.search).get("auth_error");
+    if (authError) {
+      window.location.replace(`/login?auth_error=${encodeURIComponent(authError)}`);
+      return;
+    }
+    let active = true;
+    getCurrentUser()
+      .then(() => { if (active) void navigate({ to: "/home", replace: true }); })
+      .catch(() => { if (active) void navigate({ to: "/login", replace: true }); });
+    return () => { active = false; };
+  }, [navigate]);
+
   return (
-    <section className="welcome-panel" aria-labelledby="welcome-title">
-      <p className="welcome-panel__context">Ambiente Organizacional</p>
-      <h1 className="welcome-panel__title" id="welcome-title">
-        Pesquisa de Clima
-      </h1>
-      <p className="welcome-panel__description">Plataforma em desenvolvimento</p>
-      <p className="welcome-panel__institutional-copy">
-        Um ambiente para ouvir, entender e acompanhar a experiência dos nossos colaboradores.
-      </p>
-    </section>
+    <p role="status" className="api-state">Abrindo a página inicial…</p>
   );
 }

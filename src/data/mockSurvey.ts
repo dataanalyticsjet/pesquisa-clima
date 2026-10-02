@@ -17,6 +17,7 @@ export type SurveyOption = {
   value: string;
   label: string;
   exclusive?: boolean;
+  score?: number;
 };
 
 export type SurveyQuestion = {
@@ -29,6 +30,8 @@ export type SurveyQuestion = {
   helperText?: string;
   placeholder?: string;
   options?: SurveyOption[];
+  lowLabel?: string;
+  highLabel?: string;
 };
 
 export type SurveySection = {

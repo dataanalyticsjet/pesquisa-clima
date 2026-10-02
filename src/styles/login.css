@@ -144,6 +144,7 @@
 
 .login-button:focus-visible,
 .login-help-links button:focus-visible,
+.login-code-back:focus-visible,
 .login-email-form input:focus-visible {
   outline: 3px solid rgb(230 0 18 / 34%);
   outline-offset: 3px;
@@ -197,6 +198,10 @@
 .login-button--email {
   margin-top: var(--space-2);
 }
+
+.login-button:disabled { cursor: wait; opacity: 0.65; }
+.login-code-back { justify-self: start; padding: 4px 0; border: 0; color: var(--color-text-secondary); background: transparent; font: inherit; font-size: 0.82rem; }
+.login-code-back:hover { color: var(--color-brand); text-decoration: underline; }
 
 .login-notice {
   margin: var(--space-3) 0 0;
