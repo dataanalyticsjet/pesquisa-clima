@@ -425,3 +425,76 @@ def get_attention_question_respondent_counts(
         (str(segment_type), str(segment_code), int(question_id), int(respondent_count))
         for segment_type, segment_code, question_id, respondent_count in session.execute(statement).all()
     ]
+
+
+def get_voice_question_definitions(
+    session: Session, survey_id: int
+) -> list[tuple[str, str, str]]:
+    """Load the official text and type for the three open-text voice questions."""
+    statement = (
+        select(SurveyQuestion.code, SurveyQuestion.text, SurveyQuestion.question_type)
+        .where(
+            SurveyQuestion.survey_id == survey_id,
+            SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
+        )
+        .order_by(SurveyQuestion.position)
+    )
+    return [
+        (str(code), str(question_text), str(question_type))
+        for code, question_text, question_type in session.execute(statement).all()
+    ]
+
+
+def get_voice_respondent_counts(session: Session, survey_id: int) -> list[tuple[str, int]]:
+    """Count distinct anonymous responses with nonblank text for each voice question."""
+    statement = (
+        select(
+            SurveyQuestion.code,
+            func.count(distinct(ResponseAnswer.response_id)),
+        )
+        .select_from(ResponseAnswer)
+        .join(
+            SurveyQuestion,
+            and_(
+                SurveyQuestion.id == ResponseAnswer.question_id,
+                SurveyQuestion.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .where(
+            ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
+            ResponseAnswer.text_value.is_not(None),
+            func.trim(ResponseAnswer.text_value) != "",
+        )
+        .group_by(SurveyQuestion.code)
+    )
+    return [
+        (str(code), int(respondent_count))
+        for code, respondent_count in session.execute(statement).all()
+    ]
+
+
+def get_voice_text_answers(session: Session, survey_id: int) -> list[tuple[str, str]]:
+    """Retrieve only the question code and anonymous text, with no technical identifiers."""
+    statement = (
+        select(SurveyQuestion.code, ResponseAnswer.text_value)
+        .select_from(ResponseAnswer)
+        .join(
+            SurveyQuestion,
+            and_(
+                SurveyQuestion.id == ResponseAnswer.question_id,
+                SurveyQuestion.survey_id == ResponseAnswer.survey_id,
+            ),
+        )
+        .where(
+            ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
+            ResponseAnswer.text_value.is_not(None),
+            func.trim(ResponseAnswer.text_value) != "",
+        )
+    )
+    return [
+        (str(code), str(text_value))
+        for code, text_value in session.execute(statement).all()
+        if text_value is not None
+    ]

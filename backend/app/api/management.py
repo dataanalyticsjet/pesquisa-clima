@@ -7,16 +7,33 @@ from app.schemas.management import (
     ManagementSurveyAttentionResponse,
     ManagementSurveyOverviewResponse,
     ManagementSurveyPillarsResponse,
+    ManagementSurveyVoiceResponse,
 )
 from app.services.management_service import (
     ManagementSurveyNotFoundError,
     get_survey_attention,
     get_survey_overview,
     get_survey_pillars,
+    get_survey_voice,
 )
 
 
 router = APIRouter(prefix="/api/management/surveys", tags=["management"])
+
+
+@router.get(
+    "/{survey_code}/voice",
+    response_model=ManagementSurveyVoiceResponse,
+)
+def read_survey_voice(
+    survey_code: str,
+    _user: User = Depends(require_management_access),
+    session: Session = Depends(get_db_session),
+):
+    try:
+        return get_survey_voice(session, survey_code)
+    except ManagementSurveyNotFoundError:
+        raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
 
 
 @router.get(

@@ -1,4 +1,5 @@
 import logging
+from collections import Counter
 
 from sqlalchemy.orm import Session
 
@@ -279,4 +280,90 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
         "survey_status": survey.status,
         "min_group_size": minimum,
         "regionals": [row[0] for row in regional_rows],
+    }
+
+
+def _voice_visible_count(count: int, minimum: int) -> int | None:
+    if count == 0:
+        return 0
+    if count < minimum:
+        return None
+    return count
+
+
+def _normalize_voice_term(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def get_survey_voice(session: Session, survey_code: str) -> dict[str, object]:
+    """Return privacy-thresholded anonymous comments and Q42 term aggregates."""
+    logger.info("voice analytics requested")
+    survey = management_repository.get_survey_by_code(session, survey_code)
+    if survey is None:
+        raise ManagementSurveyNotFoundError
+
+    definitions = management_repository.get_voice_question_definitions(session, survey.id)
+    respondent_counts = dict(
+        management_repository.get_voice_respondent_counts(session, survey.id)
+    )
+    text_by_question: dict[str, list[str]] = {}
+    for question_code, text in management_repository.get_voice_text_answers(session, survey.id):
+        if text.strip():
+            text_by_question.setdefault(question_code, []).append(text)
+
+    definitions_by_code = {
+        code: {"question_text": question_text, "question_type": question_type}
+        for code, question_text, question_type in definitions
+    }
+    minimum = int(survey.min_group_size)
+    questions: list[dict[str, object]] = []
+    suppressed = False
+
+    for question_code in ("Q40", "Q41", "Q42"):
+        definition = definitions_by_code.get(question_code)
+        if definition is None:
+            continue
+
+        respondent_count = respondent_counts.get(question_code, 0)
+        analytics_available = respondent_count > 0 and respondent_count >= minimum
+        if not analytics_available:
+            suppressed = True
+
+        common: dict[str, object] = {
+            "question_code": question_code,
+            "question_text": definition["question_text"],
+            "question_type": definition["question_type"],
+            "analytics_available": analytics_available,
+            "respondent_count": _voice_visible_count(respondent_count, minimum),
+        }
+
+        if question_code == "Q42":
+            normalized_terms = (
+                (_normalize_voice_term(text) for text in text_by_question.get(question_code, []))
+                if analytics_available
+                else ()
+            )
+            terms = Counter(term for term in normalized_terms if term)
+            common["terms"] = [
+                {"term": term, "count": count}
+                for term, count in sorted(terms.items(), key=lambda item: (-item[1], item[0]))
+            ]
+            questions.append(common)
+            continue
+
+        comments = text_by_question.get(question_code, []) if analytics_available else []
+        common["comments"] = sorted(
+            comments,
+            key=lambda text: (_normalize_voice_term(text), text.casefold(), text),
+        )
+        questions.append(common)
+
+    if suppressed:
+        logger.info("voice analytics suppressed")
+    logger.info("voice analytics generated")
+    return {
+        "survey_code": survey.code,
+        "survey_status": survey.status,
+        "min_group_size": minimum,
+        "questions": questions,
     }

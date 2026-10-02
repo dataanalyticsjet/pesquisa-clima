@@ -77,3 +77,37 @@ class ManagementSurveyAttentionResponse(BaseModel):
     survey_status: str
     min_group_size: int
     regionals: list[ManagementAttentionRegional]
+
+
+class ManagementVoiceQuestionBase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_code: str
+    question_text: str
+    question_type: str
+    analytics_available: bool
+    respondent_count: int | None
+
+
+class ManagementVoiceCommentsQuestion(ManagementVoiceQuestionBase):
+    comments: list[str]
+
+
+class ManagementVoiceTerm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    term: str
+    count: int
+
+
+class ManagementVoiceTermsQuestion(ManagementVoiceQuestionBase):
+    terms: list[ManagementVoiceTerm]
+
+
+class ManagementSurveyVoiceResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    survey_code: str
+    survey_status: str
+    min_group_size: int
+    questions: list[ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion]
