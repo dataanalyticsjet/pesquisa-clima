@@ -1,31 +1,22 @@
-type Language = "PT" | "中文";
-
 type LanguageSelectorProps = {
   className?: string;
 };
 
-const languages: Language[] = ["PT", "中文"];
+import { useI18n } from "../../i18n/context";
 
 export function LanguageSelector({ className = "" }: LanguageSelectorProps) {
+  const { locale, setLocale, t } = useI18n();
   const classes = ["app-header__languages", className].filter(Boolean).join(" ");
 
   return (
-    <div className={classes} role="group" aria-label="Idiomas disponíveis">
-      {languages.map((language, index) => (
-        <span className="app-header__language-item" key={language}>
-          {index > 0 && (
-            <span className="app-header__language-separator" aria-hidden="true">
-              |
-            </span>
-          )}
-          <span
-            className={language === "PT" ? "app-header__language-active" : undefined}
-            aria-current={language === "PT" ? "true" : undefined}
-          >
-            {language}
-          </span>
-        </span>
-      ))}
+    <div className={classes} role="group" aria-label={t("language.label")}>
+      <button className={`app-header__language-button${locale === "pt" ? " app-header__language-active" : ""}`} type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>
+        PT
+      </button>
+      <span className="app-header__language-separator" aria-hidden="true">|</span>
+      <button className={`app-header__language-button${locale === "zh" ? " app-header__language-active" : ""}`} type="button" aria-pressed={locale === "zh"} onClick={() => setLocale("zh")}>
+        中文
+      </button>
     </div>
   );
 }

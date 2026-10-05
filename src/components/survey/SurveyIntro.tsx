@@ -1,4 +1,5 @@
 import type { SurveyDefinition } from "../../services/surveys";
+import { useI18n } from "../../i18n/context";
 
 type SurveyIntroProps = {
   onStart: () => void;
@@ -6,6 +7,7 @@ type SurveyIntroProps = {
 };
 
 export function SurveyIntro({ onStart, survey }: SurveyIntroProps) {
+  const { t } = useI18n();
   const paragraphs = (survey.intro_text ?? "").split(/\n\s*\n/).filter((paragraph) => paragraph.length > 0);
   return (
     <section className="survey-intro" aria-labelledby="survey-intro-title">
@@ -13,7 +15,7 @@ export function SurveyIntro({ onStart, survey }: SurveyIntroProps) {
       <h1 id="survey-intro-title">{survey.title}</h1>
       <div className="survey-intro__description">
         {paragraphs.slice(1).map((paragraph, index) => (
-          <p className={paragraph.toLocaleLowerCase("pt-BR").includes("anônima") ? "survey-intro__official-privacy" : undefined} key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+          <p className={index === 3 ? "survey-intro__official-privacy" : undefined} key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
         ))}
       </div>
 
@@ -25,23 +27,23 @@ export function SurveyIntro({ onStart, survey }: SurveyIntroProps) {
           </svg>
         </span>
         <div>
-          <h2 id="survey-intro-participation-title">Como protegemos sua participação</h2>
+          <h2 id="survey-intro-participation-title">{t("survey.protection")}</h2>
           <ul>
-            <li>Cada colaborador poderá responder esta pesquisa apenas uma vez.</li>
-            <li>O acesso identifica somente se você já participou.</li>
-            <li>Suas respostas não serão associadas ao seu nome, e-mail ou usuário.</li>
-            <li>Os resultados serão apresentados de forma consolidada.</li>
+            <li>{t("survey.protectOnce")}</li>
+            <li>{t("survey.protectAccess")}</li>
+            <li>{t("survey.protectIdentity")}</li>
+            <li>{t("survey.protectResults")}</li>
           </ul>
         </div>
       </aside>
 
-      <div className="survey-intro__facts" aria-label="Informações da pesquisa">
-        <span><strong>{survey.questions.length}</strong> perguntas</span>
-        <span><strong>{survey.sections.length}</strong> seções</span>
+      <div className="survey-intro__facts" aria-label={t("survey.info")}>
+        <span><strong>{survey.questions.length}</strong> {t("survey.questions")}</span>
+        <span><strong>{survey.sections.length}</strong> {t("survey.sections")}</span>
       </div>
 
       <button className="survey-button survey-button--primary" onClick={onStart} type="button">
-        Começar pesquisa
+        {t("survey.start")}
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
         </svg>

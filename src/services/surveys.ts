@@ -16,17 +16,12 @@ export type ParticipationStatus = { survey_code: string; completed: boolean; com
 
 function adaptQuestion(question: ApiQuestion, sectionId: string): SurveyQuestion {
   const type = question.question_type.toLowerCase() as SurveyQuestionType;
-  const workProfileTranslations: Record<string, string> = {
-    OPERATIONAL: "运营",
-    ADMINISTRATIVE: "行政",
-  };
   return {
     id: question.code,
     number: question.question_number,
     sectionId,
     type,
     text: question.text,
-    translatedText: question.code === "Q03" ? "您的工作属性是：" : undefined,
     required: question.required,
     helperText: question.helper_text ?? undefined,
     optionSource: question.option_source,
@@ -36,7 +31,6 @@ function adaptQuestion(question: ApiQuestion, sectionId: string): SurveyQuestion
     options: question.options.map((option) => ({
       value: option.code,
       label: option.label,
-      translatedLabel: question.code === "Q03" ? workProfileTranslations[option.code] : undefined,
       exclusive: option.is_exclusive,
       score: option.score_value ?? undefined,
     })),

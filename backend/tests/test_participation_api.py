@@ -34,8 +34,8 @@ def clean_client():
     app.dependency_overrides.clear()
 
 
-def fake_user(*, user_id=482, access_type="INTERNAL"):
-    return SimpleNamespace(id=user_id, access_type=access_type)
+def fake_user(*, user_id=482, access_type="INTERNAL", roles=("COLLABORATOR",)):
+    return SimpleNamespace(id=user_id, access_type=access_type, status="ACTIVE", roles=roles)
 
 
 def configure_authenticated_request(monkeypatch, *, user, participation=None, survey=None):
@@ -64,6 +64,21 @@ def test_authenticated_user_without_participation_is_not_completed(monkeypatch, 
         monkeypatch,
         user=user,
         survey=SimpleNamespace(id=9, code="CLIMATE_2026", status="DRAFT"),
+    )
+
+    response = client.get("/api/surveys/CLIMATE_2026/participation")
+
+    assert response.status_code == 200
+    assert response.json() == {"survey_code": "CLIMATE_2026", "completed": False}
+
+
+@pytest.mark.parametrize("role", ["COLLABORATOR", "MANAGEMENT", "SURVEY_ADMIN", "ADMIN"])
+def test_active_user_roles_can_read_their_own_participation_without_collaborator_role(monkeypatch, role):
+    user = fake_user(roles=(role,))
+    configure_authenticated_request(
+        monkeypatch,
+        user=user,
+        survey=SimpleNamespace(id=9, code="CLIMATE_2026", status="ACTIVE"),
     )
 
     response = client.get("/api/surveys/CLIMATE_2026/participation")

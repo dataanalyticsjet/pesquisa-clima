@@ -8,30 +8,33 @@ import {
   type ManagementVoiceResponse,
   type ManagementVoiceTermsQuestion,
 } from "../services/management";
+import { useI18n } from "../i18n/context";
+import type { TranslationKey } from "../i18n/catalog";
+import { questionText } from "../i18n/survey.zh";
 
 export const Route = createFileRoute("/management/voice")({ component: ManagementVoice });
 
 const surveyCode = "CLIMATE_2026";
 
-function getSurveyStatus(status: string): { label: string; tone: "active" | "neutral" } {
+function getSurveyStatus(status: string, t: ReturnType<typeof useI18n>["t"]): { label: string; tone: "active" | "neutral" } {
   switch (status) {
-    case "DRAFT": return { label: "Rascunho", tone: "neutral" };
-    case "ACTIVE": return { label: "Ativa", tone: "active" };
-    case "CLOSED": return { label: "Encerrada", tone: "neutral" };
-    default: return { label: "Status indisponível", tone: "neutral" };
+    case "DRAFT": return { label: t("management.draft"), tone: "neutral" };
+    case "ACTIVE": return { label: t("management.active"), tone: "active" };
+    case "CLOSED": return { label: t("management.closed"), tone: "neutral" };
+    default: return { label: t("management.statusUnavailable"), tone: "neutral" };
   }
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorKey(error: unknown): TranslationKey {
   if (error instanceof ApiError) {
     switch (error.status) {
-      case 403: return "Seu perfil não tem autorização para acessar esta área da Gestão.";
-      case 404: return "A pesquisa solicitada não foi encontrada.";
-      case 503: return "Sua Voz está temporariamente indisponível. Tente novamente mais tarde.";
-      case 0: return "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.";
+      case 403: return "management.voiceForbidden";
+      case 404: return "management.surveyNotFound";
+      case 503: return "management.voiceUnavailable";
+      case 0: return "management.connectionError";
     }
   }
-  return "Não foi possível carregar Sua Voz. Tente novamente mais tarde.";
+  return "management.voiceLoadError";
 }
 
 function QuestionAvailability({
@@ -41,15 +44,16 @@ function QuestionAvailability({
   question: ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion;
   minGroupSize: number;
 }) {
+  const { t } = useI18n();
   if (question.respondent_count === 0) {
-    return <p className="management-voice-state" role="status">Sem respostas</p>;
+    return <p className="management-voice-state" role="status">{t("management.noResponses")}</p>;
   }
 
   if (!question.analytics_available || question.respondent_count === null) {
     return (
       <div className="management-voice-state management-voice-state--suppressed" role="status">
-        <strong>Dados insuficientes</strong>
-        <span>Mínimo de {minGroupSize} respostas necessário</span>
+        <strong>{t("management.insufficient")}</strong>
+        <span>{t("management.minimum", { count: minGroupSize })}</span>
       </div>
     );
   }
@@ -64,6 +68,7 @@ function CommentsCard({
   question: ManagementVoiceCommentsQuestion;
   minGroupSize: number;
 }) {
+  const { locale, t } = useI18n();
   const unavailable = question.respondent_count === 0
     || !question.analytics_available
     || question.respondent_count === null;
@@ -71,8 +76,8 @@ function CommentsCard({
   return (
     <section className="voice-answer-card" aria-labelledby={`voice-${question.question_code}`}>
       <p className="management-eyebrow">{question.question_code}</p>
-      <h2 id={`voice-${question.question_code}`}>{question.question_text}</h2>
-      {!unavailable && <p className="voice-answer-card__privacy">Comentários anônimos · sem autoria ou horário de envio</p>}
+      <h2 id={`voice-${question.question_code}`}>{questionText(question.question_code, question.question_text, locale)}</h2>
+      {!unavailable && <p className="voice-answer-card__privacy">{t("management.voicePrivacy")}</p>}
       <QuestionAvailability question={question} minGroupSize={minGroupSize} />
       {!unavailable && question.comments.length > 0 && (
         <ul className="voice-comment-list">
@@ -82,13 +87,14 @@ function CommentsCard({
         </ul>
       )}
       {!unavailable && question.comments.length === 0 && (
-        <p className="management-voice-state" role="status">Nenhum comentário disponível.</p>
+        <p className="management-voice-state" role="status">{t("management.noComment")}</p>
       )}
     </section>
   );
 }
 
 function TermsCard({ question, minGroupSize }: { question: ManagementVoiceTermsQuestion; minGroupSize: number }) {
+  const { locale, t } = useI18n();
   const unavailable = question.respondent_count === 0
     || !question.analytics_available
     || question.respondent_count === null;
@@ -97,8 +103,8 @@ function TermsCard({ question, minGroupSize }: { question: ManagementVoiceTermsQ
     <section className="management-section voice-terms-section" aria-labelledby="voice-Q42">
       <div className="management-section__heading">
         <div>
-          <p className="management-eyebrow">Q42 · TERMOS FREQUENTES</p>
-          <h2 id="voice-Q42">{question.question_text}</h2>
+          <p className="management-eyebrow">{t("management.frequentTerms")}</p>
+          <h2 id="voice-Q42">{questionText(question.question_code, question.question_text, locale)}</h2>
         </div>
       </div>
       <QuestionAvailability question={question} minGroupSize={minGroupSize} />
@@ -113,7 +119,7 @@ function TermsCard({ question, minGroupSize }: { question: ManagementVoiceTermsQ
         </ul>
       )}
       {!unavailable && question.terms.length === 0 && (
-        <p className="management-voice-state" role="status">Nenhum termo disponível.</p>
+        <p className="management-voice-state" role="status">{t("management.noTerm")}</p>
       )}
     </section>
   );
@@ -122,8 +128,9 @@ function TermsCard({ question, minGroupSize }: { question: ManagementVoiceTermsQ
 function ManagementVoice() {
   const navigate = useNavigate();
   const [data, setData] = useState<ManagementVoiceResponse | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<TranslationKey | "">("");
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   useEffect(() => {
     let active = true;
@@ -135,13 +142,13 @@ function ManagementVoice() {
           void navigate({ to: "/login", replace: true });
           return;
         }
-        setError(getErrorMessage(reason));
+        setError(getErrorKey(reason));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [navigate]);
 
-  const status = data ? getSurveyStatus(data.survey_status) : undefined;
+  const status = data ? getSurveyStatus(data.survey_status, t) : undefined;
   const questions = data?.questions ?? [];
   const commentQuestions = questions.filter((question): question is ManagementVoiceCommentsQuestion =>
     question.question_code === "Q40" || question.question_code === "Q41",
@@ -153,8 +160,8 @@ function ManagementVoice() {
   return (
     <ManagementLayout>
       <ManagementPageTitle
-        title="Sua Voz"
-        description="Comentários e termos anônimos das respostas abertas da Pesquisa de Clima."
+        title={t("management.voiceTitle")}
+        description={t("management.voiceDescription")}
         statusBadge={status?.label}
         statusTone={status?.tone}
       />
@@ -162,15 +169,15 @@ function ManagementVoice() {
       {loading && (
         <div className="management-pillars-state" role="status" aria-live="polite">
           <span className="management-pillars-state__spinner" aria-hidden="true" />
-          <span>Carregando respostas anônimas…</span>
+          <span>{t("management.voiceLoading")}</span>
         </div>
       )}
-      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{error}</p>}
+      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{t(error)}</p>}
       {!loading && data && (
         <>
           <p className="management-privacy-note">
             <span className="management-privacy-note__icon" aria-hidden="true">i</span>
-            <span>Comentários anônimos, sem identificadores técnicos ou indicação da ordem de envio.</span>
+            <span>{t("management.voicePrivacyNote")}</span>
           </p>
           <div className="voice-answer-grid">
             {commentQuestions.map((question) => (

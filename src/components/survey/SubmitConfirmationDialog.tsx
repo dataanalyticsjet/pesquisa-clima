@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useI18n } from "../../i18n/context";
 
 type SubmitConfirmationDialogProps = {
   onCancel: () => void;
@@ -8,6 +9,7 @@ type SubmitConfirmationDialogProps = {
 
 export function SubmitConfirmationDialog({ onCancel, onConfirm, isSubmitting = false }: SubmitConfirmationDialogProps) {
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     confirmButtonRef.current?.focus();
@@ -33,16 +35,14 @@ export function SubmitConfirmationDialog({ onCancel, onConfirm, isSubmitting = f
             <path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
           </svg>
         </span>
-        <h2 id="survey-confirm-title">Enviar pesquisa?</h2>
-        <p id="survey-confirm-description">
-          Após confirmar, suas respostas serão enviadas uma única vez e sua participação será registrada junto com a submissão.
-        </p>
+        <h2 id="survey-confirm-title">{t("survey.confirmTitle")}</h2>
+        <p id="survey-confirm-description">{t("survey.confirmDescription")}</p>
         <div className="survey-dialog__actions">
           <button className="survey-button survey-button--secondary" disabled={isSubmitting} onClick={onCancel} type="button">
-            Voltar
+            {t("survey.back")}
           </button>
           <button className="survey-button survey-button--primary" disabled={isSubmitting} onClick={onConfirm} ref={confirmButtonRef} type="button">
-            {isSubmitting ? "Enviando…" : "Confirmar envio"}
+            {isSubmitting ? t("survey.sending") : t("survey.confirm")}
           </button>
         </div>
       </section>

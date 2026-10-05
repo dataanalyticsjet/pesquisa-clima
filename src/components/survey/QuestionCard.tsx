@@ -1,6 +1,7 @@
 import type { ReactNode, ChangeEvent } from "react";
 import type { SurveyAnswer, SurveyOption, SurveyQuestion } from "../../data/mockSurvey";
 import { LikertScale } from "./LikertScale";
+import { useI18n } from "../../i18n/context";
 
 type QuestionCardProps = {
   question: SurveyQuestion;
@@ -16,6 +17,7 @@ type QuestionCardProps = {
 };
 
 function ChoiceOptions({ question, selectedValue, onAnswer, optionsOverride, optionsLoading, optionsDisabled, optionsError }: Omit<QuestionCardProps, "questionNumber" | "totalQuestions" | "navigation">) {
+  const { t } = useI18n();
   const options = optionsOverride ?? question.options ?? [];
   if (question.type === "select") {
     const disabled = Boolean(optionsDisabled || optionsLoading || options.length === 0);
@@ -24,7 +26,7 @@ function ChoiceOptions({ question, selectedValue, onAnswer, optionsOverride, opt
         <label className="survey-select-field">
           <span className="visually-hidden">{question.text}</span>
           <select aria-label={question.text} disabled={disabled} onChange={(event) => onAnswer(event.target.value)} value={typeof selectedValue === "string" ? selectedValue : ""}>
-            <option disabled value="">{optionsLoading ? "Carregando opções…" : question.placeholder ?? "Selecione uma opção"}</option>
+          <option disabled value="">{optionsLoading ? t("survey.loadingOptions") : question.placeholder ?? t("survey.selectOption")}</option>
             {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
@@ -37,7 +39,7 @@ function ChoiceOptions({ question, selectedValue, onAnswer, optionsOverride, opt
     const selected = Array.isArray(selectedValue) ? selectedValue : [];
     return (
       <fieldset className="survey-choice-list survey-choice-list--multiple">
-        <legend className="visually-hidden">{question.helperText ?? "Selecione uma ou mais opções"}</legend>
+        <legend className="visually-hidden">{question.helperText ?? t("survey.selectMultiple")}</legend>
         {options.map((option) => {
           const checked = selected.includes(option.value);
           return (
@@ -59,19 +61,20 @@ function ChoiceOptions({ question, selectedValue, onAnswer, optionsOverride, opt
 
   return (
     <fieldset className="survey-choice-list">
-      <legend className="visually-hidden">{question.helperText ?? "Selecione uma opção"}</legend>
+      <legend className="visually-hidden">{question.helperText ?? t("survey.selectOption")}</legend>
       {options.map((option) => <label className="survey-choice" key={option.value}>
         <input checked={selectedValue === option.value} name={`answer-${question.id}`} onChange={() => onAnswer(option.value)} type="radio" value={option.value} />
-        <span className="survey-choice__label">{option.label}{option.translatedLabel && <span className="survey-choice__translation" lang="zh-CN">{option.translatedLabel}</span>}</span>
+        <span className="survey-choice__label">{option.label}</span>
       </label>)}
     </fieldset>
   );
 }
 
 function NpsScale({ question, selectedValue, onAnswer }: Omit<QuestionCardProps, "questionNumber" | "totalQuestions" | "navigation">) {
+  const { t } = useI18n();
   return (
     <fieldset className="nps-scale">
-      <legend>{question.helperText ?? "Selecione uma nota de 0 a 10"}</legend>
+      <legend>{question.helperText ?? t("survey.selectNps")}</legend>
       <div className="nps-scale__options">{question.options?.map((option) => <label className="nps-option" key={option.value}>
         <input checked={selectedValue === option.value} name={`answer-${question.id}`} onChange={() => onAnswer(option.value)} type="radio" value={option.value} />
         <span>{option.score ?? option.label}</span>
@@ -94,11 +97,11 @@ function TextAnswer({ question, selectedValue, onAnswer }: Omit<QuestionCardProp
 
 export function QuestionCard(props: QuestionCardProps) {
   const { question, questionNumber, totalQuestions, selectedValue, onAnswer, navigation } = props;
+  const { t } = useI18n();
   return (
     <section className="question-card" aria-labelledby="current-question-title">
-      <p className="question-card__count">Pergunta {questionNumber} <span>de {totalQuestions}</span></p>
+      <p className="question-card__count">{t("survey.question", { number: questionNumber })} <span>{t("survey.of")} {totalQuestions}</span></p>
       <h1 id="current-question-title">{question.text}</h1>
-      {question.translatedText && <p className="question-card__translation question-card__translation--question" lang="zh-CN">{question.translatedText}</p>}
       {question.helperText && <p className="question-card__helper">{question.helperText}</p>}
       <div className="question-card__response">
         {question.type === "likert" && <LikertScale questionId={question.id} options={question.options ?? []} onChange={onAnswer} selectedValue={typeof selectedValue === "string" ? selectedValue : undefined} />}

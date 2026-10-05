@@ -16,7 +16,6 @@ export type SurveyQuestionType =
 export type SurveyOption = {
   value: string;
   label: string;
-  translatedLabel?: string;
   exclusive?: boolean;
   score?: number;
 };
@@ -27,7 +26,6 @@ export type SurveyQuestion = {
   sectionId: string;
   type: SurveyQuestionType;
   text: string;
-  translatedText?: string;
   required: boolean;
   helperText?: string;
   optionSource?: string;
@@ -80,13 +78,13 @@ const unitDemoOptions = options([
   "DEMO — Unidade GP",
 ]);
 const workProfileOptions: SurveyOption[] = [
-  { value: "OPERATIONAL", label: "Operacional", translatedLabel: "运营" },
-  { value: "ADMINISTRATIVE", label: "Administrativo", translatedLabel: "行政" },
+  { value: "OPERATIONAL", label: "Operacional" },
+  { value: "ADMINISTRATIVE", label: "Administrativo" },
 ];
 const questions: SurveyQuestion[] = [
   { id: "q01", number: 1, sectionId: "identificacao", type: "select", text: "Qual é a sua Regional?", required: true, placeholder: "Selecionar Regional", options: regionalOptions },
   { id: "q02", number: 2, sectionId: "identificacao", type: "select", text: "Qual é a sua Base/Unidade de atuação?", required: true, placeholder: "Selecionar Base/Unidade", options: unitDemoOptions },
-  { id: "q03", number: 3, sectionId: "identificacao", type: "single_choice", text: "Seu perfil de atuação é:", translatedText: "您的工作属性是：", required: true, options: workProfileOptions },
+  { id: "q03", number: 3, sectionId: "identificacao", type: "single_choice", text: "Seu perfil de atuação é:", required: true, options: workProfileOptions },
   { id: "q04", number: 4, sectionId: "condicoes", type: "likert", text: "Tenho estrutura, ferramentas e recursos adequados para realizar meu trabalho.", required: true },
   { id: "q05", number: 5, sectionId: "condicoes", type: "likert", text: "Os processos internos e a organização do trabalho facilitam a realização das minhas atividades.", required: true },
   { id: "q06", number: 6, sectionId: "condicoes", type: "multiple_choice", text: "Em relação à estrutura e aos recursos disponíveis para o seu trabalho, o que você considera que precisa ser melhorado?", helperText: "Você pode selecionar mais de uma opção.", required: true, options: [

@@ -1,4 +1,7 @@
+import { useI18n } from "../../i18n/context";
+
 export function SurveyPrivacyNote() {
+  const { t } = useI18n();
   return (
     <aside className="survey-privacy-note" aria-labelledby="survey-privacy-title">
       <span className="survey-privacy-note__icon" aria-hidden="true">
@@ -8,10 +11,10 @@ export function SurveyPrivacyNote() {
         </svg>
       </span>
       <div>
-        <h2 id="survey-privacy-title">Confidencialidade</h2>
-        <p>Seu acesso é utilizado apenas para validar sua participação e impedir respostas duplicadas.</p>
-        <p>Após o envio, sua identidade não será vinculada ao conteúdo das respostas.</p>
-        <p>Os resultados serão analisados de forma consolidada.</p>
+        <h2 id="survey-privacy-title">{t("home.confidentiality")}</h2>
+        <p>{t("home.privacy1")}</p>
+        <p>{t("home.privacy2")}</p>
+        <p>{t("home.privacy3")}</p>
       </div>
     </aside>
   );

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { getCurrentUser } from "../services/auth";
 import { getAuthenticatedLandingPath } from "../lib/roleNavigation";
+import { useI18n } from "../i18n/context";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   useEffect(() => {
     const authError = new URLSearchParams(window.location.search).get("auth_error");
     if (authError) {
@@ -23,6 +25,6 @@ function HomePage() {
   }, [navigate]);
 
   return (
-    <p role="status" className="api-state">Abrindo a página inicial…</p>
+    <p role="status" className="api-state">{t("home.opening")}</p>
   );
 }

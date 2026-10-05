@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { ApiError } from "../lib/api";
 import { canAccessManagement } from "../lib/roleNavigation";
 import { getCurrentUser } from "../services/auth";
+import { useI18n } from "../i18n/context";
 
 export const Route = createFileRoute("/management")({ component: ManagementShell });
 
 function ManagementShell() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [access, setAccess] = useState<"checking" | "allowed" | "unavailable">("checking");
 
   useEffect(() => {
@@ -33,10 +35,10 @@ function ManagementShell() {
   }, [navigate]);
 
   if (access === "checking") {
-    return <p role="status" className="api-state">Validando acesso à Gestão…</p>;
+    return <p role="status" className="api-state">{t("management.validating")}</p>;
   }
   if (access === "unavailable") {
-    return <p role="alert" className="api-state">Não foi possível validar seu acesso à Gestão. Verifique sua conexão e tente novamente.</p>;
+    return <p role="alert" className="api-state">{t("management.accessError")}</p>;
   }
   return <Outlet />;
 }

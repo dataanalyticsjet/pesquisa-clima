@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { useI18n } from "../../i18n/context";
 
 export function SurveySuccess({ completionText }: { completionText?: string | null }) {
+  const { t } = useI18n();
   return (
     <section className="survey-success" aria-labelledby="survey-success-title">
       <span className="survey-success__icon" aria-hidden="true">
@@ -9,16 +11,16 @@ export function SurveySuccess({ completionText }: { completionText?: string | nu
           <path d="m14 24 7 7 14-15" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
         </svg>
       </span>
-      <p className="survey-section-eyebrow">Participação concluída</p>
-      <h1 id="survey-success-title">Pesquisa enviada</h1>
-      <p className="survey-success__thanks">{completionText || "Obrigada por participar!"}</p>
+      <p className="survey-section-eyebrow">{t("survey.successEyebrow")}</p>
+      <h1 id="survey-success-title">{t("survey.successTitle")}</h1>
+      <p className="survey-success__thanks">{completionText || t("survey.successThanks")}</p>
       <div className="survey-success__description">
-        <p>Seu envio foi concluído.</p>
-        <p>Por segurança e integridade da pesquisa, não será possível enviar uma nova resposta.</p>
-        <p>Suas respostas permanecem anônimas e serão consideradas apenas nos resultados consolidados.</p>
+        <p>{t("survey.successSent")}</p>
+        <p>{t("survey.successOnce")}</p>
+        <p>{t("survey.successAnonymous")}</p>
       </div>
       <Link className="survey-button survey-button--primary" to="/home">
-        Voltar ao início
+        {t("survey.backHome")}
       </Link>
     </section>
   );

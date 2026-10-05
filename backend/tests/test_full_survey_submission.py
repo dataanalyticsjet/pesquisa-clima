@@ -335,6 +335,26 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert str(SYNTHETIC_USER_ID) not in response.text
     assert str(SYNTHETIC_USER_ID) not in caplog.text
 
+
+@pytest.mark.parametrize("role", ["MANAGEMENT", "SURVEY_ADMIN", "ADMIN"])
+def test_management_roles_without_collaborator_can_submit_once(role, official_definition, full_submission_http):
+    http, session, _catalog = full_submission_http
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+        id=SYNTHETIC_USER_ID, access_type="INTERNAL", status="ACTIVE", roles=(role,)
+    )
+    payload = frontend_payload(official_definition, "MG/SPN", "CGE")
+
+    response = http.post(f"/api/surveys/{official_definition.code}/responses", json=payload)
+
+    assert response.status_code == 201, response.json()
+    assert response.json() == {"submitted": True}
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+    participations = [row for row in session.committed if isinstance(row, SurveyParticipation)]
+    assert len(participations) == 1
+    assert participations[0].user_id == SYNTHETIC_USER_ID
+    assert participations[0].status == "COMPLETED"
+
 @pytest.mark.parametrize("variant", ["administrative_profile", "exclusive_choice", "nps_zero"])
 def test_http_full_official_survey_accepts_work_profile_and_choice_variants(
     variant, official_definition, full_submission_http, caplog

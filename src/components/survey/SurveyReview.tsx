@@ -1,5 +1,6 @@
 import type { SurveyAnswer, SurveyQuestion } from "../../data/mockSurvey";
 import type { SurveyDefinition } from "../../services/surveys";
+import { useI18n } from "../../i18n/context";
 
 type SurveyReviewProps = {
   answers: Record<string, SurveyAnswer>;
@@ -7,16 +8,16 @@ type SurveyReviewProps = {
   survey: SurveyDefinition;
 };
 
-function answerLabel(question: SurveyQuestion, answer: SurveyAnswer | undefined) {
-  if (answer === undefined || answer === "" || (Array.isArray(answer) && answer.length === 0)) return "Não preenchida (opcional)";
+function answerLabel(question: SurveyQuestion, answer: SurveyAnswer | undefined, t: ReturnType<typeof useI18n>["t"]) {
+  if (answer === undefined || answer === "" || (Array.isArray(answer) && answer.length === 0)) return t("survey.notAnswered");
   if (typeof answer === "number") return `${answer}`;
-  if (question.type === "textarea" || question.type === "short_text") return "Resposta aberta preenchida";
+  if (question.type === "textarea" || question.type === "short_text") return t("survey.openFilled");
   const values = Array.isArray(answer) ? answer : [answer];
   return values.map((value) => {
     const option = question.options?.find((item) => item.value === value);
     if (!option) return value;
     if (question.type === "likert" && option.score !== undefined) return `${option.score} — ${option.label}`;
-    if (question.type === "nps" && option.score !== undefined) return `${option.score} de 10`;
+    if (question.type === "nps" && option.score !== undefined) return t("survey.outOfTen", { score: option.score });
     return option.label;
   }).join(", ");
 }
@@ -26,6 +27,7 @@ function hasAnswer(value: SurveyAnswer | undefined) {
 }
 
 export function SurveyReview({ answers, onEditSection, survey }: SurveyReviewProps) {
+  const { t } = useI18n();
   const totalQuestions = survey.questions.length;
   const answeredCount = survey.questions.filter((question) => hasAnswer(answers[question.id])).length;
 
@@ -33,11 +35,11 @@ export function SurveyReview({ answers, onEditSection, survey }: SurveyReviewPro
     <section className="survey-review" aria-labelledby="survey-review-title">
       <div className="survey-review__heading">
         <div>
-          <p className="survey-section-eyebrow">Última etapa</p>
-          <h1 id="survey-review-title">Revisar respostas</h1>
-          <p>Confira suas respostas antes de prosseguir.</p>
+          <p className="survey-section-eyebrow">{t("survey.lastStep")}</p>
+          <h1 id="survey-review-title">{t("survey.reviewTitle")}</h1>
+          <p>{t("survey.reviewDescription")}</p>
         </div>
-        <span className="survey-review__complete">{answeredCount} de {totalQuestions} respondidas</span>
+        <span className="survey-review__complete">{t("survey.answerCount", { answered: answeredCount, total: totalQuestions })}</span>
       </div>
 
       <div className="survey-review__sections">
@@ -51,22 +53,22 @@ export function SurveyReview({ answers, onEditSection, survey }: SurveyReviewPro
                 <details className="review-section__details">
                   <summary className="review-section__summary">
                     <span className="review-section__name">{section.name}</span>
-                    <span className="review-section__count">{answeredInSection} de {sectionQuestions.length} respondidas</span>
+                    <span className="review-section__count">{t("survey.answerCount", { answered: answeredInSection, total: sectionQuestions.length })}</span>
                   </summary>
                   <div className="review-section__content">
                     <ol className="review-section__answers">
                       {sectionQuestions.map((question) => (
                         <li key={question.id}>
                           <span>{question.number}. {question.text}</span>
-                          <strong>{answerLabel(question, answers[question.id])}</strong>
+                          <strong>{answerLabel(question, answers[question.id], t)}</strong>
                         </li>
                       ))}
                     </ol>
                   </div>
                 </details>
                 <button className="review-section__edit" onClick={() => onEditSection(sectionIndex)} type="button">
-                  Editar
-                  <span className="visually-hidden"> seção {section.name}</span>
+                  {t("survey.edit")}
+                  <span className="visually-hidden">{t("survey.sectionAccessible", { name: section.name })}</span>
                 </button>
               </div>
             </article>

@@ -7,34 +7,32 @@ import {
   type ManagementAttentionQuestion,
   type ManagementAttentionResponse,
 } from "../services/management";
+import { useI18n } from "../i18n/context";
+import type { TranslationKey } from "../i18n/catalog";
+import { questionText } from "../i18n/survey.zh";
 
 export const Route = createFileRoute("/management/attention")({ component: ManagementAttention });
 
 const surveyCode = "CLIMATE_2026";
-const formatPercent = new Intl.NumberFormat("pt-BR", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-function getSurveyStatus(status: string): { label: string; tone: "active" | "neutral" } {
+function getSurveyStatus(status: string, t: ReturnType<typeof useI18n>["t"]): { label: string; tone: "active" | "neutral" } {
   switch (status) {
-    case "DRAFT": return { label: "Rascunho", tone: "neutral" };
-    case "ACTIVE": return { label: "Ativa", tone: "active" };
-    case "CLOSED": return { label: "Encerrada", tone: "neutral" };
-    default: return { label: "Status indisponível", tone: "neutral" };
+    case "DRAFT": return { label: t("management.draft"), tone: "neutral" };
+    case "ACTIVE": return { label: t("management.active"), tone: "active" };
+    case "CLOSED": return { label: t("management.closed"), tone: "neutral" };
+    default: return { label: t("management.statusUnavailable"), tone: "neutral" };
   }
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorKey(error: unknown): TranslationKey {
   if (error instanceof ApiError) {
     switch (error.status) {
-      case 403: return "Seu perfil não tem autorização para acessar os pontos de atenção.";
-      case 404: return "A pesquisa solicitada não foi encontrada.";
-      case 503: return "Os pontos de atenção estão temporariamente indisponíveis. Tente novamente mais tarde.";
-      case 0: return "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.";
+      case 403: return "management.attentionForbidden";
+      case 404: return "management.surveyNotFound";
+      case 503: return "management.attentionUnavailable";
+      case 0: return "management.connectionError";
     }
   }
-  return "Não foi possível carregar os pontos de atenção. Tente novamente mais tarde.";
+  return "management.resultsLoadError";
 }
 
 function AttentionMetric({
@@ -50,22 +48,24 @@ function AttentionMetric({
   minGroupSize: number;
   compact?: boolean;
 }) {
+  const { locale, t } = useI18n();
+  const formatPercent = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (respondentCount === 0) {
-    return <span className={`management-attention-metric${compact ? " is-compact" : ""}`} role="status">Sem respostas</span>;
+    return <span className={`management-attention-metric${compact ? " is-compact" : ""}`} role="status">{t("management.noResponses")}</span>;
   }
 
   if (!analyticsAvailable || attentionRate === null) {
     return (
       <span className={`management-attention-metric management-attention-metric--suppressed${compact ? " is-compact" : ""}`} role="status">
-        <strong>Dados insuficientes</strong>
-        <small>Mínimo de {minGroupSize} respostas necessário</small>
+        <strong>{t("management.insufficient")}</strong>
+        <small>{t("management.minimum", { count: minGroupSize })}</small>
       </span>
     );
   }
 
   return (
     <span className={`management-attention-metric${compact ? " is-compact" : ""}`}>
-      <small>Taxa de atenção</small>
+      <small>{t("management.attentionRate")}</small>
       <strong>{formatPercent.format(attentionRate)}%</strong>
     </span>
   );
@@ -78,8 +78,9 @@ function QuestionList({
   questions: ManagementAttentionQuestion[];
   minGroupSize: number;
 }) {
+  const { locale, t } = useI18n();
   if (!questions.length) {
-    return <p className="management-attention-empty">Nenhuma pergunta elegível disponível.</p>;
+    return <p className="management-attention-empty">{t("management.noQuestions")}</p>;
   }
 
   return (
@@ -88,7 +89,7 @@ function QuestionList({
         <li className="management-attention-question" key={question.question_code}>
           <div className="management-attention-question__copy">
             <span>{question.question_code}</span>
-            <p>{question.question_text}</p>
+            <p>{questionText(question.question_code, question.question_text, locale)}</p>
           </div>
           <AttentionMetric
             analyticsAvailable={question.analytics_available}
@@ -110,9 +111,10 @@ function RegionalQuestions({
   regional: ManagementAttentionResponse["regionals"][number];
   minGroupSize: number;
 }) {
+  const { t } = useI18n();
   return (
     <details className="management-attention-questions-disclosure">
-      <summary>Perguntas da Regional <span>({regional.questions.length})</span></summary>
+      <summary>{t("management.regionalQuestionCount", { count: regional.questions.length })}</summary>
       <QuestionList questions={regional.questions} minGroupSize={minGroupSize} />
     </details>
   );
@@ -121,8 +123,9 @@ function RegionalQuestions({
 function ManagementAttention() {
   const navigate = useNavigate();
   const [data, setData] = useState<ManagementAttentionResponse | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<TranslationKey | "">("");
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   useEffect(() => {
     let active = true;
@@ -134,20 +137,20 @@ function ManagementAttention() {
           void navigate({ to: "/login", replace: true });
           return;
         }
-        setError(getErrorMessage(reason));
+        setError(getErrorKey(reason));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [navigate]);
 
-  const status = data ? getSurveyStatus(data.survey_status) : undefined;
+  const status = data ? getSurveyStatus(data.survey_status, t) : undefined;
   const serviceCenterCount = data?.regionals.reduce((total, regional) => total + regional.scs.length, 0) ?? 0;
 
   return (
     <ManagementLayout>
       <ManagementPageTitle
-        title="Pontos de atenção"
-        description="Taxas consolidadas por Regional, SC e pergunta, respeitando o mínimo de respostas para divulgação."
+        title={t("management.attentionTitle")}
+        description={t("management.attentionDescription")}
         statusBadge={status?.label}
         statusTone={status?.tone}
       />
@@ -155,22 +158,22 @@ function ManagementAttention() {
       {loading && (
         <div className="management-pillars-state" role="status" aria-live="polite">
           <span className="management-pillars-state__spinner" aria-hidden="true" />
-          <span>Carregando pontos de atenção…</span>
+          <span>{t("management.loadingAttention")}</span>
         </div>
       )}
-      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{error}</p>}
+      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{t(error)}</p>}
 
       {!loading && data && (
         <>
           <p className="management-attention-summary">
-            Todos os grupos · {data.regionals.length} Regionais · {serviceCenterCount} SCs
+            {t("management.allGroups", { regionals: data.regionals.length, scs: serviceCenterCount })}
           </p>
-          <div className="management-attention-regionals" aria-label="Todos os grupos por Regional">
+          <div className="management-attention-regionals" aria-label={t("management.allGroupsAria")}>
             {data.regionals.map((regional) => (
               <article className="management-attention-regional" key={regional.regional_code}>
                 <header className="management-attention-regional__header">
                   <div>
-                    <p className="management-eyebrow">REGIONAL</p>
+                    <p className="management-eyebrow">{t("management.regional")}</p>
                     <h2>{regional.regional_code}</h2>
                   </div>
                   <AttentionMetric
@@ -183,7 +186,7 @@ function ManagementAttention() {
 
                 <RegionalQuestions regional={regional} minGroupSize={data.min_group_size} />
 
-                <div className="management-attention-scs" aria-label={`SCs da Regional ${regional.regional_code}`}>
+                <div className="management-attention-scs" aria-label={t("management.scAria", { code: regional.regional_code })}>
                   {regional.scs.map((sc) => (
                     <details className="management-attention-sc" key={sc.sc_code}>
                       <summary className="management-attention-sc__summary">

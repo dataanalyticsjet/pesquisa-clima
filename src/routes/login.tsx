@@ -4,6 +4,8 @@ import { LanguageSelector } from "../components/layout/LanguageSelector";
 import { ApiError, apiUrl } from "../lib/api";
 import { clearFeishuPostLoginRedirect, getAuthenticatedLandingPath, markFeishuPostLoginRedirect } from "../lib/roleNavigation";
 import { getCurrentUser, requestEmailCode, verifyEmailCode } from "../services/auth";
+import { useI18n } from "../i18n/context";
+import type { TranslationKey } from "../i18n/catalog";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -16,18 +18,19 @@ function LoginPage() {
   const [code, setCode] = useState("");
   const [codeRequested, setCodeRequested] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<TranslationKey | "">("");
+  const { t } = useI18n();
 
   useEffect(() => {
     clearFeishuPostLoginRedirect();
     const authError = new URLSearchParams(window.location.search).get("auth_error");
     if (authError) {
-      const messages: Record<string, string> = {
-        feishu_disabled: "O acesso pelo Feishu está temporariamente indisponível.",
-        invalid_state: "Não foi possível validar o acesso. Inicie novamente pelo Feishu.",
-        expired_state: "A solicitação de acesso expirou. Inicie novamente pelo Feishu.",
+      const messages: Record<string, TranslationKey> = {
+        feishu_disabled: "login.feishuDisabled",
+        invalid_state: "login.invalidState",
+        expired_state: "login.expiredState",
       };
-      setNotice(messages[authError] ?? "Não foi possível concluir o acesso pelo Feishu. Tente novamente.");
+      setNotice(messages[authError] ?? "login.feishuError");
     }
     let active = true;
     getCurrentUser().then(({ user }) => {
@@ -44,7 +47,7 @@ function LoginPage() {
       if (!codeRequested) {
         await requestEmailCode(email);
         setCodeRequested(true);
-        setNotice("Se o endereço puder receber acesso, enviaremos um código. Verifique seu e-mail.");
+        setNotice("login.codeSent");
       } else {
         await verifyEmailCode(email, code);
         const { user } = await getCurrentUser();
@@ -52,11 +55,11 @@ function LoginPage() {
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 503) {
-        setNotice("Não foi possível concluir o acesso agora. Tente novamente em alguns minutos.");
+        setNotice("login.accessUnavailable");
       } else if (error instanceof ApiError && (error.status === 400 || error.status === 403 || error.status === 409 || error.status === 422)) {
-        setNotice("Não foi possível validar o acesso. Confira os dados ou solicite um novo código.");
+        setNotice("login.codeInvalid");
       } else {
-        setNotice("Não foi possível conectar ao serviço de acesso. Tente novamente.");
+        setNotice("login.connectionError");
       }
     } finally {
       setIsBusy(false);
@@ -75,11 +78,11 @@ function LoginPage() {
         <section className="login-card" aria-labelledby="login-title">
           <img className="login-card__logo" src="/jt-express-logo.png" alt="J&T Express" />
           <h1 className="login-card__title" id="login-title">
-            Acesse a plataforma
+            {t("login.title")}
           </h1>
-          <p className="login-card__product">Pesquisa de Clima</p>
+          <p className="login-card__product">{t("login.product")}</p>
           <p className="login-card__description">
-            Ambiente sigiloso para ouvir, entender e acompanhar a experiência dos colaboradores.
+            {t("login.description")}
           </p>
 
           <button
@@ -97,11 +100,11 @@ function LoginPage() {
                 strokeWidth="1.8"
               />
             </svg>
-            Entrar com Feishu
+            {t("login.feishu")}
           </button>
 
           <div className="login-divider" aria-hidden="true">
-            <span>ou</span>
+            <span>{t("login.or")}</span>
           </div>
 
           <button
@@ -134,7 +137,7 @@ function LoginPage() {
                 strokeWidth="1.7"
               />
             </svg>
-            Entrar com e-mail alternativo
+            {t("login.emailAlt")}
           </button>
 
           {emailFormOpen && (
@@ -143,19 +146,19 @@ function LoginPage() {
               id="alternate-email-form"
               onSubmit={handleEmailSubmit}
             >
-              <label htmlFor="alternate-email">E-mail</label>
-              <input autoComplete="email" id="alternate-email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="nome@empresa.com" required type="email" value={email} disabled={codeRequested} />
-              {codeRequested && <><label htmlFor="alternate-code">Código de acesso</label><input id="alternate-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="[0-9]{6}" placeholder="Digite o código de 6 dígitos" required type="text" value={code} /></>}
+              <label htmlFor="alternate-email">{t("login.email")}</label>
+              <input autoComplete="email" id="alternate-email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder={t("login.emailPlaceholder")} required type="email" value={email} disabled={codeRequested} />
+              {codeRequested && <><label htmlFor="alternate-code">{t("login.accessCode")}</label><input id="alternate-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="[0-9]{6}" placeholder={t("login.codePlaceholder")} required type="text" value={code} /></>}
               <button className="login-button login-button--email" disabled={isBusy || (codeRequested && code.length !== 6)} type="submit">
-                {isBusy ? "Aguarde…" : codeRequested ? "Validar código" : "Receber código de acesso"}
+                {isBusy ? t("login.wait") : codeRequested ? t("login.validate") : t("login.receive")}
               </button>
-              {codeRequested && <button className="login-code-back" type="button" onClick={() => { setCodeRequested(false); setCode(""); setNotice(""); }}>Usar outro e-mail</button>}
+              {codeRequested && <button className="login-code-back" type="button" onClick={() => { setCodeRequested(false); setCode(""); setNotice(""); }}>{t("login.useOther")}</button>}
             </form>
           )}
 
           {notice && (
             <p className="login-notice" role="status">
-              {notice}
+              {t(notice)}
             </p>
           )}
 
@@ -178,8 +181,7 @@ function LoginPage() {
               />
             </svg>
             <p>
-              Suas respostas são confidenciais. Sua identidade de acesso não será vinculada ao
-              conteúdo das respostas.
+              {t("login.privacy")}
             </p>
           </div>
 

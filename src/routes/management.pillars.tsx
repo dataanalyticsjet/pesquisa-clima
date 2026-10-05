@@ -5,6 +5,8 @@ import { ManagementLayout, ManagementPageTitle } from "../components/management/
 import { ManagementPillarApiCard } from "../components/management/ManagementPillarApiCard";
 import { ApiError } from "../lib/api";
 import { getManagementPillars, type ManagementPillarsResponse } from "../services/management";
+import { useI18n } from "../i18n/context";
+import type { TranslationKey } from "../i18n/catalog";
 
 export const Route = createFileRoute("/management/pillars")({ component: ManagementPillars });
 
@@ -13,8 +15,9 @@ const surveyCode = "CLIMATE_2026";
 function ManagementPillars() {
   const navigate = useNavigate();
   const [data, setData] = useState<ManagementPillarsResponse | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<TranslationKey | "">("");
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   useEffect(() => {
     let active = true;
@@ -27,13 +30,13 @@ function ManagementPillars() {
           return;
         }
         if (reason instanceof ApiError && reason.status === 403) {
-          setError("Seu perfil não tem autorização para acessar os resultados de gestão.");
+          setError("management.pillarsForbidden");
         } else if (reason instanceof ApiError && reason.status === 404) {
-          setError("A pesquisa solicitada não foi encontrada.");
+          setError("management.surveyNotFound");
         } else if (reason instanceof ApiError && reason.status === 503) {
-          setError("Os resultados dos pilares estão temporariamente indisponíveis. Tente novamente mais tarde.");
+          setError("management.pillarsUnavailable");
         } else {
-          setError("Não foi possível carregar os resultados. Verifique sua conexão e tente novamente.");
+          setError("management.resultsLoadError");
         }
       })
       .finally(() => { if (active) setLoading(false); });
@@ -42,16 +45,16 @@ function ManagementPillars() {
 
   return (
     <ManagementLayout>
-      <ManagementPageTitle title="Resultados por pilar" description="Índices consolidados dos pilares da Pesquisa de Clima, respeitando o mínimo de respostas para divulgação." />
+      <ManagementPageTitle title={t("management.pillarTitle")} description={t("management.pillarDescription")} />
       {loading && (
         <div className="management-pillars-state" role="status" aria-live="polite">
           <span className="management-pillars-state__spinner" aria-hidden="true" />
-          <span>Carregando resultados dos pilares…</span>
+          <span>{t("management.loadingPillars")}</span>
         </div>
       )}
-      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{error}</p>}
+      {!loading && error && <p className="management-pillars-state management-pillars-state--error" role="alert">{t(error)}</p>}
       {!loading && data && (
-        <div className="pillar-score-grid" aria-label="Resultados dos dez pilares">
+        <div className="pillar-score-grid" aria-label={t("management.pillarsAria")}>
           {data.pillars.map((pillar) => (
             <ManagementPillarApiCard
               key={pillar.code}

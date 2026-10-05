@@ -1,4 +1,5 @@
 import type { SurveyOption } from "../../data/mockSurvey";
+import { useI18n } from "../../i18n/context";
 
 type LikertScaleProps = {
   questionId: string;
@@ -8,9 +9,10 @@ type LikertScaleProps = {
 };
 
 export function LikertScale({ questionId, selectedValue, options, onChange }: LikertScaleProps) {
+  const { t } = useI18n();
   return (
     <fieldset className="likert-scale">
-      <legend>Selecione seu nível de concordância</legend>
+      <legend>{t("survey.selectLikert")}</legend>
       <div className="likert-scale__options" role="radiogroup">
         {options.map((option) => (
           <label className="likert-option" key={option.value}>
