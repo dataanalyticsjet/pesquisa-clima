@@ -11,12 +11,13 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+type EmailLoginStep = "initial" | "email" | "code";
+
 function LoginPage() {
   const navigate = useNavigate();
-  const [emailFormOpen, setEmailFormOpen] = useState(false);
+  const [emailLoginStep, setEmailLoginStep] = useState<EmailLoginStep>("initial");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [codeRequested, setCodeRequested] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [notice, setNotice] = useState<TranslationKey | "">("");
   const { t } = useI18n();
@@ -41,13 +42,14 @@ function LoginPage() {
 
   async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const requestingCode = emailLoginStep === "email";
     setNotice("");
     setIsBusy(true);
     try {
-      if (!codeRequested) {
+      if (requestingCode) {
         await requestEmailCode(email);
-        setCodeRequested(true);
-        setNotice("login.codeSent");
+        setCode("");
+        setEmailLoginStep("code");
       } else {
         await verifyEmailCode(email, code);
         const { user } = await getCurrentUser();
@@ -55,11 +57,30 @@ function LoginPage() {
       }
     } catch (error) {
       if (error instanceof ApiError && error.status >= 500) {
-        setNotice(codeRequested ? "login.verificationUnavailable" : "login.emailUnavailable");
+        setNotice(requestingCode ? "login.emailUnavailable" : "login.verificationUnavailable");
       } else if (error instanceof ApiError && error.status === 422) {
-        setNotice("login.invalidEmail");
+        setNotice(requestingCode ? "login.invalidEmail" : "login.codeInvalid");
       } else if (error instanceof ApiError && (error.status === 400 || error.status === 403 || error.status === 409)) {
         setNotice("login.codeInvalid");
+      } else {
+        setNotice("login.connectionError");
+      }
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleResendCode() {
+    setNotice("");
+    setIsBusy(true);
+    try {
+      await requestEmailCode(email);
+      setNotice("login.resendRequested");
+    } catch (error) {
+      if (error instanceof ApiError && error.status >= 500) {
+        setNotice("login.emailUnavailable");
+      } else if (error instanceof ApiError && error.status === 422) {
+        setNotice("login.invalidEmail");
       } else {
         setNotice("login.connectionError");
       }
@@ -80,82 +101,59 @@ function LoginPage() {
         <section className="login-card" aria-labelledby="login-title">
           <img className="login-card__logo" src="/jt-express-logo.png" alt="J&T Express" />
           <h1 className="login-card__title" id="login-title">
-            {t("login.title")}
+            {t(emailLoginStep === "initial" ? "login.title" : emailLoginStep === "email" ? "login.emailStepTitle" : "login.codeStepTitle")}
           </h1>
           <p className="login-card__product">{t("login.product")}</p>
-          <p className="login-card__description">
-            {t("login.description")}
-          </p>
-
-          <button
-            className="login-button login-button--primary"
-            type="button"
-            onClick={handleFeishuLogin}
-          >
-            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
-              <path
-                d="M13 5h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5M10 8l4 4-4 4m4-4H4"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-              />
-            </svg>
-            {t("login.feishu")}
-          </button>
-
-          <div className="login-divider" aria-hidden="true">
-            <span>{t("login.or")}</span>
-          </div>
-
-          <button
-            className="login-button login-button--secondary"
-            type="button"
-            aria-expanded={emailFormOpen}
-            aria-controls="alternate-email-form"
-            onClick={() => {
-              setEmailFormOpen((isOpen) => !isOpen);
-              setNotice("");
-            }}
-          >
-            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
-              <rect
-                x="3.5"
-                y="5.5"
-                width="17"
-                height="13"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-              />
-              <path
-                d="m4.5 7 7.5 5.5L19.5 7"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.7"
-              />
-            </svg>
-            {t("login.emailAlt")}
-          </button>
-
-          {emailFormOpen && (
-            <form
-              className="login-email-form"
-              id="alternate-email-form"
-              onSubmit={handleEmailSubmit}
-            >
-              <label htmlFor="alternate-email">{t("login.email")}</label>
-              <input autoComplete="email" id="alternate-email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder={t("login.emailPlaceholder")} required type="email" value={email} disabled={codeRequested} />
-              {codeRequested && <><label htmlFor="alternate-code">{t("login.accessCode")}</label><input id="alternate-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="[0-9]{6}" placeholder={t("login.codePlaceholder")} required type="text" value={code} /></>}
-              <button className="login-button login-button--email" disabled={isBusy || (codeRequested && code.length !== 6)} type="submit">
-                {isBusy ? t("login.wait") : codeRequested ? t("login.validate") : t("login.receive")}
+          {emailLoginStep === "initial" ? (
+            <>
+              <p className="login-card__description">{t("login.description")}</p>
+              <button className="login-button login-button--primary" type="button" onClick={handleFeishuLogin}>
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+                  <path d="M13 5h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5M10 8l4 4-4 4m4-4H4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                </svg>
+                {t("login.feishu")}
               </button>
-              {codeRequested && <button className="login-code-back" type="button" onClick={() => { setCodeRequested(false); setCode(""); setNotice(""); }}>{t("login.useOther")}</button>}
-            </form>
+              <div className="login-divider" aria-hidden="true"><span>{t("login.or")}</span></div>
+              <button className="login-button login-button--secondary" type="button" onClick={() => { setNotice(""); setEmailLoginStep("email"); }}>
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+                  <rect x="3.5" y="5.5" width="17" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                  <path d="m4.5 7 7.5 5.5L19.5 7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+                </svg>
+                {t("login.emailAlt")}
+              </button>
+            </>
+          ) : (
+            <div className="login-email-step">
+              {emailLoginStep === "code" && <p className="login-code-sent" role="status">{t("login.codeSentTo", { email })}</p>}
+              <form className="login-email-form" onSubmit={handleEmailSubmit}>
+                {emailLoginStep === "email" ? (
+                  <>
+                    <label htmlFor="alternate-email">{t("login.emailPrompt")}</label>
+                    <input autoComplete="email" id="alternate-email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder={t("login.emailPlaceholder")} required type="email" value={email} />
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor="alternate-code">{t("login.codePrompt")}</label>
+                    <input autoComplete="one-time-code" id="alternate-code" inputMode="numeric" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="[0-9]{6}" placeholder={t("login.codePlaceholder")} required type="text" value={code} />
+                  </>
+                )}
+                <button className="login-button login-button--email" disabled={isBusy || (emailLoginStep === "code" && code.length !== 6)} type="submit">
+                  {isBusy ? t("login.wait") : emailLoginStep === "email" ? t("login.receive") : t("login.validate")}
+                </button>
+              </form>
+              {emailLoginStep === "code" && (
+                <button className="login-resend" type="button" disabled={isBusy} onClick={() => void handleResendCode()}>
+                  {isBusy ? t("login.wait") : t("login.resend")}
+                </button>
+              )}
+              <button className="login-step-back" type="button" disabled={isBusy} onClick={() => {
+                setNotice("");
+                setCode("");
+                setEmailLoginStep(emailLoginStep === "code" ? "email" : "initial");
+              }}>
+                {t(emailLoginStep === "code" ? "login.useOther" : "login.back")}
+              </button>
+            </div>
           )}
 
           {notice && (

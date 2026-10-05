@@ -147,7 +147,7 @@
 }
 
 .login-button:focus-visible,
-.login-code-back:focus-visible,
+.login-step-back:focus-visible,
 .login-email-form input:focus-visible {
   outline: 3px solid rgb(230 0 18 / 34%);
   outline-offset: 3px;
@@ -173,7 +173,13 @@
 .login-email-form {
   display: grid;
   gap: var(--space-2);
-  margin-top: var(--space-4);
+  margin: 0;
+}
+
+.login-email-step {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 .login-email-form label {
@@ -203,8 +209,49 @@
 }
 
 .login-button:disabled { cursor: wait; opacity: 0.65; }
-.login-code-back { justify-self: start; padding: 4px 0; border: 0; color: var(--color-text-secondary); background: transparent; font: inherit; font-size: 0.82rem; }
-.login-code-back:hover { color: var(--color-brand); text-decoration: underline; }
+.login-step-back {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.login-step-back:hover { color: var(--color-brand); text-decoration: underline; }
+
+.login-resend {
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-brand);
+  background: transparent;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.login-resend:hover:not(:disabled) { text-decoration: underline; }
+.login-resend:focus-visible { outline: 3px solid rgb(230 0 18 / 34%); outline-offset: 3px; }
+.login-resend:disabled { cursor: wait; opacity: 0.65; }
+
+.login-code-sent {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--color-text-secondary);
+  background: var(--color-brand-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 
 .login-notice {
   padding: var(--space-3);
