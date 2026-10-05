@@ -27,6 +27,7 @@ SEED_PATH = Path(__file__).resolve().parents[1] / "sql" / "003_seed_climate_surv
 SURVEY_ID = 2026
 SYNTHETIC_USER_ID = 900001
 REGIONAL_SC_CASES = (
+    ("MATRIZ", "MATRIZ"),
     ("BA", "AJU"),
     ("CE", "FOR"),
     ("GP", "ANA"),
@@ -334,6 +335,35 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert anonymous[0].response_id not in caplog.text
     assert str(SYNTHETIC_USER_ID) not in response.text
     assert str(SYNTHETIC_USER_ID) not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("regional", "sc"),
+    [("MATRIZ", "GRU"), ("SPS", "MATRIZ")],
+)
+def test_http_rejects_matriz_sc_outside_its_regional(
+    regional, sc, official_definition, full_submission_http
+):
+    http, session, catalog = full_submission_http
+    payload = frontend_payload(official_definition, regional, sc)
+
+    response = http.post(f"/api/surveys/{official_definition.code}/responses", json=payload)
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "INVALID_OPTION",
+            "question_code": "Q02",
+            "reason": "SC_NOT_IN_REGIONAL",
+        }
+    }
+    assert catalog.calls == [
+        ("ORG_REGIONAL", regional, None, None),
+        ("ORG_BASE", sc, regional, None),
+    ]
+    assert session.commit_count == 0
+    assert session.rollback_count == 1
+    assert session.added == [] and session.committed == []
 
 
 @pytest.mark.parametrize("role", ["MANAGEMENT", "SURVEY_ADMIN", "ADMIN"])

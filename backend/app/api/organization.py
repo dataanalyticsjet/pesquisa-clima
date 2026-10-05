@@ -16,8 +16,8 @@ router = APIRouter(prefix="/api/organization", tags=["organization"])
 def read_regionals(_user: User = Depends(get_current_user)):
     return {
         "regionals": [
-            {"code": code, "label": code}
-            for code in organization_catalog_service.get_regionals()
+            {"code": regional.code, "label": regional.display_name or regional.code}
+            for regional in organization_catalog_service.get_regional_sc_catalog()
         ]
     }
 

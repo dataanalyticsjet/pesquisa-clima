@@ -92,16 +92,22 @@ def find_sc(regional, code):
     return next(item for item in regional["scs"] if item["sc_code"] == code)
 
 
-def test_catalog_contains_all_eight_regionals_and_26_service_centers():
+def test_catalog_contains_all_nine_regionals_and_27_service_centers():
     assert [entry.code for entry in REGIONAL_SC_CATALOG] == [
-        "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
+        "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
     ]
-    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 26
+    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 27
+    matriz = REGIONAL_SC_CATALOG[0]
+    assert matriz.display_name == "Matriz"
+    assert [(sc.code, sc.display_name) for sc in matriz.service_centers] == [
+        ("MATRIZ", "MATRIZ — Matriz")
+    ]
 
 
 @pytest.mark.parametrize(
     "regional,expected",
     [
+        ("MATRIZ", ["MATRIZ"]),
         ("BA", ["AJU", "FEC", "VDC"]),
         ("CE", ["FOR", "JGS", "THE"]),
         ("GP", ["ANA", "BSB", "CGB", "CGR", "GYN", "MRB", "PMW", "PVH", "STM"]),
@@ -118,10 +124,46 @@ def test_catalog_has_official_sc_codes_in_source_order(regional, expected):
 
 
 def test_catalog_formats_display_name_and_does_not_invent_cnpj():
-    aju = REGIONAL_SC_CATALOG[0].service_centers[0]
+    ba = next(entry for entry in REGIONAL_SC_CATALOG if entry.code == "BA")
+    aju = ba.service_centers[0]
     assert aju.display_name == "AJU — SE - ARACAJU"
     assert all("cnpj" not in sc.__dict__ for regional in REGIONAL_SC_CATALOG for sc in regional.service_centers)
     assert OrganizationCatalogService().validate_selection("ORG_CNPJ", "invented") is False
+
+
+@pytest.mark.parametrize(
+    ("respondent_count", "expected_count", "expected_rate"),
+    [(0, 0, None), (1, None, None), (4, None, None), (5, 5, 100.0)],
+)
+def test_matriz_regional_and_base_follow_attention_privacy_threshold(
+    monkeypatch, respondent_count, expected_count, expected_rate
+):
+    groups = [("REGIONAL", "MATRIZ", respondent_count), ("BASE", "MATRIZ", respondent_count)]
+    scores = []
+    questions = []
+    if respondent_count:
+        scores = [
+            (segment_type, "MATRIZ", 44, "Q4", "Pergunta elegível 4", 4, 1, respondent_count)
+            for segment_type in ("REGIONAL", "BASE")
+        ]
+        questions = [
+            (segment_type, "MATRIZ", 44, respondent_count)
+            for segment_type in ("REGIONAL", "BASE")
+        ]
+
+    payload = configure_service(
+        monkeypatch, group_counts=groups, score_counts=scores, question_counts=questions
+    )
+
+    regional = find_regional(payload, "MATRIZ")
+    base = find_sc(regional, "MATRIZ")
+    assert regional["respondent_count"] == expected_count
+    assert regional["analytics_available"] is (respondent_count >= 5)
+    assert regional["attention_rate"] == expected_rate
+    assert base["display_name"] == "MATRIZ — Matriz"
+    assert base["respondent_count"] == expected_count
+    assert base["analytics_available"] is (respondent_count >= 5)
+    assert base["attention_rate"] == expected_rate
 
 
 @pytest.mark.parametrize("score,expected_rate", [(1, 100.0), (2, 100.0), (3, 0.0), (4, 0.0), (5, 0.0)])
@@ -164,8 +206,10 @@ def test_group_rate_uses_weighted_answers_not_mean_of_question_percentages(monke
 def test_every_catalog_group_and_eligible_question_is_returned_with_zero_counts(monkeypatch):
     payload = configure_service(monkeypatch)
 
-    assert len(payload["regionals"]) == 8
-    assert sum(len(region["scs"]) for region in payload["regionals"]) == 26
+    assert len(payload["regionals"]) == 9
+    assert sum(len(region["scs"]) for region in payload["regionals"]) == 27
+    assert payload["regionals"][0]["regional_code"] == "MATRIZ"
+    assert payload["regionals"][0]["scs"][0]["sc_code"] == "MATRIZ"
     for regional in payload["regionals"]:
         assert regional["respondent_count"] == 0
         assert regional["analytics_available"] is False
@@ -273,8 +317,8 @@ def test_groups_with_data_are_sorted_by_attention_rate_and_no_group_is_dropped(m
 
     assert [item["regional_code"] for item in payload["regionals"][:2]] == ["CE", "BA"]
     assert payload["regionals"][2]["regional_code"] == "GP"
-    assert len(payload["regionals"]) == 8
-    assert sum(len(item["scs"]) for item in payload["regionals"]) == 26
+    assert len(payload["regionals"]) == 9
+    assert sum(len(item["scs"]) for item in payload["regionals"]) == 27
 
 
 def test_question_suppressed_by_minimum_remains_in_the_response(monkeypatch):
@@ -370,7 +414,7 @@ def test_management_roles_can_access_attention(monkeypatch, role):
     response = client.get("/api/management/surveys/CLIMATE_2026/attention")
 
     assert response.status_code == 200
-    assert len(response.json()["regionals"]) == 8
+    assert len(response.json()["regionals"]) == 9
 
 
 @pytest.mark.parametrize("access_type", ["INTERNAL", "EXTERNAL"])

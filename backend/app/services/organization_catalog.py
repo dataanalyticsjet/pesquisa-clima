@@ -15,11 +15,17 @@ class ServiceCenter:
 class RegionalCatalogEntry:
     code: str
     service_centers: tuple[ServiceCenter, ...]
+    display_name: str | None = None
 
 
 # Approved Regional → SC catalog shared by survey selection and management reporting.
 # Q03 work-profile choices are static survey options and do not belong in this catalog.
 REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
+    RegionalCatalogEntry(
+        "MATRIZ",
+        (ServiceCenter("MATRIZ", "Matriz"),),
+        display_name="Matriz",
+    ),
     RegionalCatalogEntry(
         "BA",
         (
