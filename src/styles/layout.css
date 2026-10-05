@@ -210,7 +210,9 @@
   }
 
   .app-header__logo {
-    display: none;
+    display: block;
+    width: 84px;
+    height: 34px;
   }
 
   .app-header__title {
@@ -251,7 +253,9 @@
   }
 
   .app-header__logo {
-    display: none;
+    display: block;
+    width: 72px;
+    height: 30px;
   }
 
   .app-header__title {
