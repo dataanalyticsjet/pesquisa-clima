@@ -135,6 +135,19 @@ def test_request_accepts_valid_external_email_and_sends_code(monkeypatch):
     assert len(captured["codes"]) == 1
 
 
+def test_gmail_address_can_request_external_code(monkeypatch):
+    captured = setup_request_repositories(monkeypatch)
+    mailer = FakeMailer()
+
+    result = external_auth_service.request_external_login_code(
+        FakeSession(), "External.Person@Gmail.com", mailer=mailer
+    )
+
+    assert result is True
+    assert mailer.sent[0][0] == "external.person@gmail.com"
+    assert captured["codes"][0].email == "external.person@gmail.com"
+
+
 def test_request_normalizes_email_before_sending_and_storing(monkeypatch):
     captured = setup_request_repositories(monkeypatch)
     mailer = FakeMailer()

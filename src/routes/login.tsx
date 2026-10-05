@@ -54,9 +54,11 @@ function LoginPage() {
         await navigate({ to: getAuthenticatedLandingPath(user.roles), replace: true });
       }
     } catch (error) {
-      if (error instanceof ApiError && error.status === 503) {
-        setNotice("login.accessUnavailable");
-      } else if (error instanceof ApiError && (error.status === 400 || error.status === 403 || error.status === 409 || error.status === 422)) {
+      if (error instanceof ApiError && error.status >= 500) {
+        setNotice(codeRequested ? "login.verificationUnavailable" : "login.emailUnavailable");
+      } else if (error instanceof ApiError && error.status === 422) {
+        setNotice("login.invalidEmail");
+      } else if (error instanceof ApiError && (error.status === 400 || error.status === 403 || error.status === 409)) {
         setNotice("login.codeInvalid");
       } else {
         setNotice("login.connectionError");

@@ -46,13 +46,10 @@ function CollaboratorHome() {
 
   if (loading) return <p role="status" className="api-state">{t("home.loading")}</p>;
   if (error || !data) return <p role="alert" className="api-state">{error ? t(error) : t("home.genericError")}</p>;
-  const firstName = data.user.name.trim().split(/\s+/)[0] ?? "Colaborador";
-  const displayName = firstName || t("home.defaultName");
   return (
     <div className="employee-page employee-home">
       <section className="employee-home__intro" aria-labelledby="employee-home-title">
-        <p className="survey-section-eyebrow">{t("home.area")}</p>
-        <h1 id="employee-home-title">{t("home.hello", { name: displayName })}</h1>
+        <h1 id="employee-home-title">{t("home.area")}</h1>
         <p>{t("home.intro")}</p>
       </section>
 

@@ -19,8 +19,17 @@
   display: inline-flex;
   flex: 0 1 auto;
   align-items: center;
+  gap: var(--space-3);
   min-width: 0;
   border-radius: var(--radius-sm);
+}
+
+.app-header__title {
+  color: var(--color-text-inverse);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .app-header__home:focus-visible,
@@ -199,8 +208,11 @@
   }
 
   .app-header__logo {
-    width: 82px;
-    height: 36px;
+    display: none;
+  }
+
+  .app-header__title {
+    font-size: 0.8rem;
   }
 
   .app-header__actions {
@@ -230,6 +242,15 @@
   .app-header__logout svg {
     width: 15px;
     height: 15px;
+  }
+
+  .app-header__logout span {
+    display: none;
+  }
+
+  .app-header__logout {
+    min-width: 30px;
+    padding-inline: 6px;
   }
 
   .app-header__error {
