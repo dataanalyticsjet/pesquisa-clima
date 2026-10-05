@@ -7,9 +7,9 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  align-items: center;
+  align-items: start;
   min-height: 100svh;
-  padding: clamp(28px, 5vw, 80px);
+  padding: 88px clamp(28px, 5vw, 80px) 40px;
   background-color: var(--color-brand-soft);
   background-image: url("/images/login/login-clima.webp");
   background-position: center;
@@ -21,6 +21,7 @@
   display: grid;
   grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
   width: min(100%, var(--content-max-width));
+  min-width: 0;
   margin-inline: auto;
 }
 
@@ -53,6 +54,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   max-width: 460px;
   padding: 34px 36px 28px;
   border: 1px solid rgb(23 24 26 / 6%);
@@ -205,13 +207,22 @@
 .login-code-back:hover { color: var(--color-brand); text-decoration: underline; }
 
 .login-notice {
-  margin: var(--space-3) 0 0;
   padding: var(--space-3);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   background: var(--color-surface-secondary);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.login-notice-slot {
+  min-height: 58px;
+  margin-top: var(--space-3);
+}
+
+.login-notice-slot .login-notice {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .login-privacy {
@@ -279,6 +290,10 @@
     max-width: 460px;
     padding: 26px 22px 22px;
     border-radius: var(--radius-lg);
+  }
+
+  .login-notice-slot {
+    min-height: 0;
   }
 
   .login-card__title {

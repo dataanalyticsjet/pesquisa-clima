@@ -22,13 +22,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const savedLocale = readSavedLocale();
     setLocaleState(savedLocale);
     document.documentElement.lang = savedLocale === "zh" ? "zh-CN" : "pt-BR";
-    document.title = savedLocale === "zh" ? "2026年员工氛围调查" : "Pesquisa de Clima";
+    document.title = "Pesquisa de Clima";
     const syncLocale = (event: StorageEvent) => {
       if (event.key === localeStorageKey) {
         const nextLocale = event.newValue === "zh" ? "zh" : "pt";
         setLocaleState(nextLocale);
         document.documentElement.lang = nextLocale === "zh" ? "zh-CN" : "pt-BR";
-        document.title = nextLocale === "zh" ? "2026年员工氛围调查" : "Pesquisa de Clima";
+        document.title = "Pesquisa de Clima";
       }
     };
     window.addEventListener("storage", syncLocale);
@@ -38,7 +38,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
     document.documentElement.lang = nextLocale === "zh" ? "zh-CN" : "pt-BR";
-    document.title = nextLocale === "zh" ? "2026年员工氛围调查" : "Pesquisa de Clima";
+    document.title = "Pesquisa de Clima";
     try {
       window.localStorage.setItem(localeStorageKey, nextLocale);
     } catch {

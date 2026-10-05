@@ -553,7 +553,7 @@
   .management-attention-question { grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--space-2); }
   .management-attention-metric { justify-items: start; text-align: left; }
   .management-attention-sc__summary > .management-attention-metric { justify-items: end; text-align: right; }
-  .management-nav__links { margin-inline: calc(-1 * var(--space-1)); padding-inline: var(--space-1); }
+  .management-nav__links { flex-wrap: wrap; overflow-x: visible; margin-inline: calc(-1 * var(--space-1)); padding-inline: var(--space-1); }
   .management-nav__link { min-height: 42px; padding-inline: var(--space-2); font-size: 0.8rem; }
 }
 

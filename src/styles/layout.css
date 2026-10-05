@@ -149,7 +149,7 @@
 }
 
 .app-main {
-  min-height: calc(100vh - 72px);
+  min-height: calc(100svh - 72px);
   background: var(--color-background);
 }
 
@@ -200,9 +200,52 @@
   line-height: 1.65;
 }
 
+@media (max-width: 680px) {
+  .app-header__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    min-height: 100px;
+    padding: 8px 16px;
+  }
+
+  .app-header__logo {
+    display: none;
+  }
+
+  .app-header__title {
+    font-size: 0.9rem;
+  }
+
+  .app-header__actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .app-header__language-button,
+  .app-header__language-active {
+    min-width: 36px;
+    min-height: 44px;
+  }
+
+  .app-header__management,
+  .app-header__logout {
+    min-height: 44px;
+  }
+
+  .app-main {
+    min-height: calc(100svh - 100px);
+  }
+
+  .app-main__inner {
+    padding: var(--space-8) var(--space-4);
+  }
+}
+
 @media (max-width: 520px) {
   .app-header__inner {
-    min-height: 58px;
+    min-height: 100px;
     gap: 6px;
     padding-inline: 12px;
   }
@@ -226,14 +269,14 @@
 
   .app-header__language-button,
   .app-header__language-active {
-    min-width: 26px;
-    min-height: 24px;
+    min-width: 34px;
+    min-height: 44px;
     padding-inline: 4px;
   }
 
   .app-header__management,
   .app-header__logout {
-    min-height: 32px;
+    min-height: 44px;
     gap: 4px;
     padding-inline: 6px;
     font-size: 0.72rem;
@@ -259,7 +302,7 @@
   }
 
   .app-main {
-    min-height: calc(100vh - 58px);
+    min-height: calc(100svh - 100px);
   }
 
   .app-main__inner {

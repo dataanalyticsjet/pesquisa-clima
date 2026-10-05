@@ -17,8 +17,19 @@ function CollaboratorHome() {
   const navigate = useNavigate();
   const [data, setData] = useState<{ user: AuthUser; survey: SurveyDefinition; participation: ParticipationStatus } | null>(null);
   const [error, setError] = useState<TranslationKey | "">("");
+  const [greetingKey, setGreetingKey] = useState<TranslationKey>("home.greeting.morning");
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      setGreetingKey(hour < 12 ? "home.greeting.morning" : hour < 18 ? "home.greeting.afternoon" : "home.greeting.evening");
+    };
+    updateGreeting();
+    const interval = window.setInterval(updateGreeting, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -49,7 +60,7 @@ function CollaboratorHome() {
   return (
     <div className="employee-page employee-home">
       <section className="employee-home__intro" aria-labelledby="employee-home-title">
-        <h1 id="employee-home-title">{t("home.area")}</h1>
+        <h1 id="employee-home-title">{t(greetingKey)}</h1>
         <p>{t("home.intro")}</p>
       </section>
 

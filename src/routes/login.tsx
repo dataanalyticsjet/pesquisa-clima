@@ -159,9 +159,9 @@ function LoginPage() {
           )}
 
           {notice && (
-            <p className="login-notice" role="status">
-              {t(notice)}
-            </p>
+            <div className="login-notice-slot">
+              <p className="login-notice" role="status">{t(notice)}</p>
+            </div>
           )}
 
           <div className="login-privacy">

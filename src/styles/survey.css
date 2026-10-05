@@ -796,12 +796,15 @@
   inset: 0;
   display: grid;
   place-items: center;
+  overflow-y: auto;
   padding: var(--space-4);
   background: rgb(23 24 26 / 48%);
 }
 
 .survey-dialog {
   width: min(100%, 460px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: var(--space-8);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -1543,7 +1546,7 @@
   }
 
   .review-section__edit {
-    min-height: 36px;
+    min-height: 44px;
     padding-inline: 9px;
     font-size: 0.78rem;
   }
