@@ -18,15 +18,8 @@ function hasAnswer(value: SurveyAnswer | undefined) {
   return (typeof value === "number") || (typeof value === "string" && value.trim().length > 0) || (Array.isArray(value) && value.length > 0);
 }
 
-function isCnpjFormat(value: string) {
-  const normalized = value.replace(/[.\/\-\s]/g, "").toUpperCase();
-  return /^[A-Z0-9]{12}\d{2}$/.test(normalized);
-}
-
-function answerIsReady(question: { optionSource?: string }, value: SurveyAnswer | undefined) {
-  if (!hasAnswer(value)) return false;
-  if (question.optionSource === "ORG_CNPJ" && value !== "unknown") return typeof value === "string" && isCnpjFormat(value);
-  return true;
+function answerIsReady(_question: { optionSource?: string }, value: SurveyAnswer | undefined) {
+  return hasAnswer(value);
 }
 
 function toSubmissionAnswers(survey: SurveyDefinition, answers: Record<string, SurveyAnswer>): SurveySubmissionAnswer[] {
@@ -35,11 +28,7 @@ function toSubmissionAnswers(survey: SurveyDefinition, answers: Record<string, S
     const value = answers[question.id];
     if (!hasAnswer(value)) continue;
     const questionCode = question.id.toUpperCase();
-    if (question.optionSource === "ORG_CNPJ") {
-      payload.push(value === "unknown"
-        ? { question_code: questionCode, option_codes: ["unknown"] }
-        : { question_code: questionCode, text_value: String(value) });
-    } else if (question.type === "textarea" || question.type === "short_text") {
+    if (question.type === "textarea" || question.type === "short_text") {
       payload.push({ question_code: questionCode, text_value: String(value) });
     } else {
       payload.push({ question_code: questionCode, option_codes: Array.isArray(value) ? value.map(String) : [String(value)] });
@@ -124,7 +113,7 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
           setSubmitError(`Não foi possível validar a resposta da pergunta ${rejectedQuestion.id}.`);
           setSubmitErrorQuestionCode(rejectedQuestion.id);
         } else {
-          setSubmitError("Não foi possível validar as respostas. Confira o CNPJ e as opções selecionadas e tente novamente.");
+          setSubmitError("Não foi possível validar as respostas. Confira as opções selecionadas e tente novamente.");
         }
       } else {
         setSubmitError("Não foi possível enviar as respostas agora. Tente novamente mais tarde.");
@@ -179,11 +168,10 @@ export function SurveyFlow({ survey }: { survey: SurveyDefinition }) {
       {step === "questions" && currentQuestion && <div className="survey-question-stage">
         <SurveyProgress answeredCount={answeredCount} totalCount={questionCount} />
         <SectionProgress answers={answers} currentSectionIndex={survey.sections.findIndex((section) => section.id === currentQuestion.sectionId)} survey={survey} />
-        <QuestionCard onAnswer={answerCurrent} question={currentQuestion} questionNumber={currentQuestion.number} selectedValue={currentAnswer} totalQuestions={questionCount} optionsOverride={currentOptions} optionsLoading={optionsLoading} optionsDisabled={optionsDisabled} optionsError={optionsError} />
-        <nav className="survey-question-navigation" aria-label="Navegação das perguntas">
+        <QuestionCard onAnswer={answerCurrent} question={currentQuestion} questionNumber={currentQuestion.number} selectedValue={currentAnswer} totalQuestions={questionCount} optionsOverride={currentOptions} optionsLoading={optionsLoading} optionsDisabled={optionsDisabled} optionsError={optionsError} navigation={<nav className="survey-question-navigation" aria-label="Navegação das perguntas">
           <button className="survey-button survey-button--secondary" onClick={goBack} type="button">Voltar</button>
           {currentQuestionIndex === questionCount - 1 ? <button className="survey-button survey-button--primary" disabled={(currentQuestion.required && !answerIsReady(currentQuestion, currentAnswer)) || !canReview} onClick={goForward} type="button">Revisar respostas</button> : <button className="survey-button survey-button--primary" disabled={(currentQuestion.required && !answerIsReady(currentQuestion, currentAnswer)) || (currentQuestion.optionSource === "ORG_REGIONAL" && (regionalLoading || Boolean(regionalError))) || (currentQuestion.optionSource === "ORG_BASE" && (!selectedRegional || serviceCentersLoading || Boolean(serviceCentersError)))} onClick={goForward} type="button">Próxima<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg></button>}
-        </nav>
+        </nav>} />
       </div>}
       {step === "review" && <div className="survey-review-stage">
         <SurveyProgress answeredCount={answeredCount} totalCount={questionCount} />

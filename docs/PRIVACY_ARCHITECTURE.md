@@ -81,7 +81,7 @@ A constraint `UNIQUE (survey_id, user_id)` em `survey_participation` arbitra dis
 
 ### Confidencialidade dos resultados
 
-Toda consulta gerencial segmentada deverá exigir `COUNT(DISTINCT response_id) >= surveys.min_group_size` para o recorte completo selecionado. Com o valor inicial 5, um recorte com três respostas não é exibido. A regra também vale para combinações Regional + Área + Base + CNPJ; não se deve oferecer drill-down ou contagens auxiliares que permitam deduzir respostas individuais.
+Toda consulta gerencial segmentada deverá exigir `COUNT(DISTINCT response_id) >= surveys.min_group_size` para o recorte completo selecionado. Com o valor inicial 5, um recorte com três respostas não é exibido. A regra vale para as dimensões organizacionais aprovadas e para recortes CNPJ que existam somente em dados históricos; Q03 não gera novos segmentos CNPJ. Não se deve oferecer drill-down ou contagens auxiliares que permitam deduzir respostas individuais.
 
 ## Estado dos arquivos SQL desta etapa
 

@@ -165,7 +165,8 @@ CREATE TABLE IF NOT EXISTS anonymous_response_segments (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Populate REGIONAL, BASE, and CNPJ from the validated official answers to Q1, Q2, and Q3.
--- If Q3 is "Não sei informar", do not create a CNPJ segment for that response.
+-- Populate REGIONAL and BASE from the validated official answers to Q1 and Q2.
+-- Q3 is a work-profile category and does not create an organizational segment.
+-- The CNPJ segment enum value remains only for compatibility with historical response data.
 -- AREA source will be defined before backend implementation.
 -- Do not infer or populate AREA until the official source is approved.

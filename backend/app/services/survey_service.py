@@ -26,14 +26,15 @@ def get_survey_definition(survey_code: str, *, require_active: bool = False) -> 
         questions = []
         for question in sorted(questions_by_section.get(section.id, []), key=lambda item: (item.position, item.id)):
             question_options = options_by_question.get(question.id, [])
-            if question.option_source == "STATIC":
+            if question.code == "Q03":
+                # Older databases may retain the former Q03 option for historic answers.
+                # It is not part of the current profile question presented to participants.
+                visible_options = sorted(
+                    [option for option in question_options if option.code in {"OPERATIONAL", "ADMINISTRATIVE"}],
+                    key=lambda item: (item.position, item.id),
+                )
+            elif question.option_source == "STATIC":
                 visible_options = sorted(question_options, key=lambda item: (item.position, item.id))
-            elif question.option_source == "ORG_CNPJ":
-                visible_options = [
-                    option
-                    for option in sorted(question_options, key=lambda item: (item.position, item.id))
-                    if option.code == "unknown" and option.label == "Não sei informar"
-                ]
             else:
                 visible_options = []
 

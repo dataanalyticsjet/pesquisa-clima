@@ -63,7 +63,7 @@ def read_data():
     questions = [
         make_question(2, 1, "ORG_BASE"),
         make_question(1, 1, "ORG_REGIONAL"),
-        make_question(3, 1, "ORG_CNPJ"),
+        make_question(3, 1, "STATIC", question_type="SINGLE_CHOICE"),
         make_question(6, 2, "STATIC", question_type="MULTIPLE_CHOICE"),
         make_question(39, 2, "STATIC", question_type="NPS"),
         make_question(40, 2, "STATIC", required=False, question_type="TEXTAREA"),
@@ -73,7 +73,8 @@ def read_data():
     options = [
         make_option(1, "demo-regional", "Regional fictícia", 1),
         make_option(2, "demo-base", "Base fictícia", 1),
-        make_option(3, "cnpj-demo", "CNPJ fictício", 1),
+        make_option(3, "OPERATIONAL", "Operacional", 1),
+        make_option(3, "ADMINISTRATIVE", "Administrativo", 2),
         make_option(3, "unknown", "Não sei informar", 65535),
         make_option(6, "exclusive", "Não identifico necessidade de melhoria", 9, is_exclusive=True),
         *[make_option(39, f"nps-{score}", str(score), score + 1, score_value=score) for score in reversed(range(11))],
@@ -126,7 +127,8 @@ def test_service_orders_definition_and_filters_organizational_options(monkeypatc
     assert first_questions["Q01"]["options"] == []
     assert first_questions["Q02"]["options"] == []
     assert first_questions["Q03"]["options"] == [
-        {"code": "unknown", "label": "Não sei informar", "position": 65535, "score_value": None, "is_exclusive": False}
+        {"code": "OPERATIONAL", "label": "Operacional", "position": 1, "score_value": None, "is_exclusive": False},
+        {"code": "ADMINISTRATIVE", "label": "Administrativo", "position": 2, "score_value": None, "is_exclusive": False},
     ]
     assert second_questions["Q06"]["options"][0]["is_exclusive"] is True
     assert [option["score_value"] for option in second_questions["Q39"]["options"]] == list(range(11))

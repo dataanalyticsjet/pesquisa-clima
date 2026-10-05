@@ -16,6 +16,7 @@ export type SurveyQuestionType =
 export type SurveyOption = {
   value: string;
   label: string;
+  translatedLabel?: string;
   exclusive?: boolean;
   score?: number;
 };
@@ -26,6 +27,7 @@ export type SurveyQuestion = {
   sectionId: string;
   type: SurveyQuestionType;
   text: string;
+  translatedText?: string;
   required: boolean;
   helperText?: string;
   optionSource?: string;
@@ -62,7 +64,7 @@ export type SurveyDefinition = {
 
 const options = (values: string[]): SurveyOption[] => values.map((label) => ({ value: label, label }));
 
-// DEMO OPTIONS: regional names are specified for this demonstration. Unit and CNPJ values are fictitious
+// DEMO OPTIONS: regional names are specified for this demonstration. Unit values are fictitious
 // placeholders because the official survey PDF does not provide those option lists.
 const regionalOptions = options(["SPS", "SPN", "SPE", "PR", "PA", "BA", "MG", "CE", "RJ", "GP"]);
 const unitDemoOptions = options([
@@ -77,15 +79,14 @@ const unitDemoOptions = options([
   "DEMO — Unidade RJ",
   "DEMO — Unidade GP",
 ]);
-const cnpjDemoOptions = [
-  { value: "DEMO-CNPJ-01", label: "DEMO — CNPJ demonstrativo 1" },
-  { value: "DEMO-CNPJ-02", label: "DEMO — CNPJ demonstrativo 2" },
-  { value: "unknown", label: "Não sei informar" },
+const workProfileOptions: SurveyOption[] = [
+  { value: "OPERATIONAL", label: "Operacional", translatedLabel: "运营" },
+  { value: "ADMINISTRATIVE", label: "Administrativo", translatedLabel: "行政" },
 ];
 const questions: SurveyQuestion[] = [
   { id: "q01", number: 1, sectionId: "identificacao", type: "select", text: "Qual é a sua Regional?", required: true, placeholder: "Selecionar Regional", options: regionalOptions },
   { id: "q02", number: 2, sectionId: "identificacao", type: "select", text: "Qual é a sua Base/Unidade de atuação?", required: true, placeholder: "Selecionar Base/Unidade", options: unitDemoOptions },
-  { id: "q03", number: 3, sectionId: "identificacao", type: "select", text: "Em qual CNPJ você está registrado(a)?", helperText: "Essa informação pode ser consultada na sua Carteira de Trabalho Digital.", required: true, placeholder: "Selecionar CNPJ/Unidade", options: cnpjDemoOptions },
+  { id: "q03", number: 3, sectionId: "identificacao", type: "single_choice", text: "Seu perfil de atuação é:", translatedText: "您的工作属性是：", required: true, options: workProfileOptions },
   { id: "q04", number: 4, sectionId: "condicoes", type: "likert", text: "Tenho estrutura, ferramentas e recursos adequados para realizar meu trabalho.", required: true },
   { id: "q05", number: 5, sectionId: "condicoes", type: "likert", text: "Os processos internos e a organização do trabalho facilitam a realização das minhas atividades.", required: true },
   { id: "q06", number: 6, sectionId: "condicoes", type: "multiple_choice", text: "Em relação à estrutura e aos recursos disponíveis para o seu trabalho, o que você considera que precisa ser melhorado?", helperText: "Você pode selecionar mais de uma opção.", required: true, options: [

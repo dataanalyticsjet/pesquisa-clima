@@ -18,7 +18,7 @@ class RegionalCatalogEntry:
 
 
 # Approved Regional → SC catalog shared by survey selection and management reporting.
-# CNPJ is user-entered data and is intentionally not represented in this catalog.
+# Q03 work-profile choices are static survey options and do not belong in this catalog.
 REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
     RegionalCatalogEntry(
         "BA",
@@ -115,7 +115,7 @@ class OrganizationCatalogService:
                 service_center.code == option_code for service_center in service_centers
             )
 
-        # CNPJ is validated as free text by the submission service, never as a catalog code.
+        # Legacy CNPJ option sources are unsupported; current Q03 uses static profile choices.
         return False
 
 

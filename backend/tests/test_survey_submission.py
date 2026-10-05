@@ -119,7 +119,7 @@ def option(question_id, code, *, exclusive=False):
         id=question_id * 1000 + sum(ord(character) for character in code),
         question_id=question_id,
         code=code,
-        label="Não sei informar" if code == "unknown" else code,
+        label=code,
         is_exclusive=exclusive,
     )
 
@@ -128,7 +128,7 @@ def definition():
     questions = [
         question(1, "SELECT", option_source="ORG_REGIONAL"),
         question(2, "SELECT", option_source="ORG_BASE"),
-        question(3, "SELECT", option_source="ORG_CNPJ"),
+        question(3, "SINGLE_CHOICE"),
         question(4, "LIKERT"),
         question(5, "SINGLE_CHOICE"),
         question(6, "MULTIPLE_CHOICE"),
@@ -137,7 +137,7 @@ def definition():
         question(42, "SHORT_TEXT", required=False),
     ]
     options = [
-        option(3, "unknown"),
+        option(3, "OPERATIONAL"), option(3, "ADMINISTRATIVE"),
         option(4, "1"), option(4, "5"),
         option(5, "A"), option(5, "B"),
         option(6, "A"), option(6, "B"), option(6, "none", exclusive=True),
@@ -146,16 +146,11 @@ def definition():
     return questions, options
 
 
-def valid_answers(*, cnpj="unknown", multi=None):
-    q3 = (
-        {"question_code": "Q03", "option_codes": ["unknown"]}
-        if cnpj == "unknown"
-        else {"question_code": "Q03", "text_value": cnpj}
-    )
+def valid_answers(*, work_profile="OPERATIONAL", multi=None):
     return [
         {"question_code": "Q01", "option_codes": ["R1"]},
         {"question_code": "Q02", "option_codes": ["B1"]},
-        q3,
+        {"question_code": "Q03", "option_codes": [work_profile]},
         {"question_code": "Q04", "option_codes": ["5"]},
         {"question_code": "Q05", "option_codes": ["A"]},
         {"question_code": "Q06", "option_codes": multi or ["A", "B"]},
@@ -239,18 +234,19 @@ def test_valid_active_submission_writes_anonymous_answers_segments_then_particip
     assert "AREA" not in {row.segment_type for row in rows if isinstance(row, AnonymousResponseSegment)}
 
 
-def test_q3_unknown_is_saved_as_static_option_without_cnpj_segment(monkeypatch):
+@pytest.mark.parametrize("work_profile", ["OPERATIONAL", "ADMINISTRATIVE"])
+def test_q3_work_profile_is_saved_as_static_option_without_cnpj_segment(monkeypatch, work_profile):
     session, _, _ = configure_service(monkeypatch)
 
     submission_service.submit_survey(
-        session, "CLIMATE_2026", 801, submission(), organization_catalog=FakeOrganizationCatalog()
+        session, "CLIMATE_2026", 801, submission(valid_answers(work_profile=work_profile)), organization_catalog=FakeOrganizationCatalog()
     )
 
     rows = session.committed
     q3_answer = next(row for row in rows if isinstance(row, ResponseAnswer) and row.question_id == 3)
     assert q3_answer.text_value is None
     q3_option = next(row for row in rows if isinstance(row, ResponseAnswerOption) and row.question_id == 3)
-    assert q3_option.option_id == option(3, "unknown").id
+    assert q3_option.option_id == option(3, work_profile).id
     assert not any(isinstance(row, AnonymousResponseSegment) and row.segment_type == "CNPJ" for row in rows)
 
 
@@ -262,16 +258,18 @@ def test_validated_org_codes_are_text_values_and_segments_are_anonymous(monkeypa
         session,
         "CLIMATE_2026",
         801,
-        submission(valid_answers(cnpj="00.000.000/E08G-12")),
+        submission(valid_answers(work_profile="ADMINISTRATIVE")),
         organization_catalog=catalog,
     )
 
     rows = session.committed
-    org_answers = {row.question_id: row for row in rows if isinstance(row, ResponseAnswer) and row.question_id in {1, 2, 3}}
-    assert {key: value.text_value for key, value in org_answers.items()} == {1: "R1", 2: "B1", 3: "00000000E08G12"}
-    assert not any(isinstance(row, ResponseAnswerOption) and row.question_id in {1, 2, 3} for row in rows)
+    org_answers = {row.question_id: row for row in rows if isinstance(row, ResponseAnswer) and row.question_id in {1, 2}}
+    assert {key: value.text_value for key, value in org_answers.items()} == {1: "R1", 2: "B1"}
+    assert not any(isinstance(row, ResponseAnswerOption) and row.question_id in {1, 2} for row in rows)
+    assert next(row for row in rows if isinstance(row, ResponseAnswer) and row.question_id == 3).text_value is None
+    assert next(row for row in rows if isinstance(row, ResponseAnswerOption) and row.question_id == 3).option_id == option(3, "ADMINISTRATIVE").id
     assert {row.segment_type: row.segment_code for row in rows if isinstance(row, AnonymousResponseSegment)} == {
-        "REGIONAL": "R1", "BASE": "B1", "CNPJ": "00000000E08G12"
+        "REGIONAL": "R1", "BASE": "B1"
     }
     assert catalog.calls == [
         ("ORG_REGIONAL", "R1", None, None),
@@ -280,47 +278,39 @@ def test_validated_org_codes_are_text_values_and_segments_are_anonymous(monkeypa
 
 
 
-def test_invalid_cnpj_format_and_check_digits_are_rejected(monkeypatch):
-    for value in ("123", "00.000.000/E08G-13", "00.000.000/E08@-12", "00000000E08GAB"):
-        session, _, _ = configure_service(monkeypatch)
-        with pytest.raises(SurveySubmissionError, match="INVALID_ANSWER"):
-            submission_service.submit_survey(
-                session,
-                "CLIMATE_2026",
-                801,
-                submission(valid_answers(cnpj=value)),
-                organization_catalog=FakeOrganizationCatalog(),
-            )
-        assert session.commit_count == 0 and session.rollback_count == 1
-
-
-def test_numeric_cnpj_is_normalized_and_segmented(monkeypatch):
+@pytest.mark.parametrize("profile", ["OPERATIONAL", "ADMINISTRATIVE"])
+def test_q3_accepts_each_official_work_profile(monkeypatch, profile):
     session, _, _ = configure_service(monkeypatch)
-    submission_service.submit_survey(
-        session, "CLIMATE_2026", 801,
-        submission(valid_answers(cnpj="11.222.333/0001-81")),
-        organization_catalog=FakeOrganizationCatalog(),
-    )
+    submission_service.submit_survey(session, "CLIMATE_2026", 801, submission(valid_answers(work_profile=profile)), organization_catalog=FakeOrganizationCatalog())
     rows = session.committed
-    q3 = next(row for row in rows if isinstance(row, ResponseAnswer) and row.question_id == 3)
-    assert q3.text_value == "11222333000181"
-    cnpj_segment = next(row for row in rows if isinstance(row, AnonymousResponseSegment) and row.segment_type == "CNPJ")
-    assert cnpj_segment.segment_code == "11222333000181"
+    answer = next(row for row in rows if isinstance(row, ResponseAnswer) and row.question_id == 3)
+    selected = next(row for row in rows if isinstance(row, ResponseAnswerOption) and row.question_id == 3)
+    assert answer.text_value is None
+    assert selected.option_id == option(3, profile).id
+    assert {row.segment_type for row in rows if isinstance(row, AnonymousResponseSegment)} == {"REGIONAL", "BASE"}
 
 
-def test_unknown_and_cnpj_cannot_be_submitted_together(monkeypatch):
+@pytest.mark.parametrize("q3_answer, expected_code, expected_reason", [
+    (None, "MISSING_REQUIRED_ANSWER", "MISSING_REQUIRED_ANSWER"),
+    ({"option_codes": ["OPERATIONAL", "ADMINISTRATIVE"]}, "INVALID_ANSWER", "SINGLE_OPTION_REQUIRED"),
+    ({"option_codes": ["NOT_A_PROFILE"]}, "INVALID_OPTION", "INVALID_WORK_PROFILE"),
+    ({"option_codes": ["unknown"]}, "INVALID_OPTION", "INVALID_WORK_PROFILE"),
+    ({"text_value": "12345678000199"}, "INVALID_ANSWER", "OPTION_CODES_REQUIRED"),
+])
+def test_q3_rejects_missing_multiple_invalid_and_text_answers(monkeypatch, q3_answer, expected_code, expected_reason):
     session, _, _ = configure_service(monkeypatch)
-    answers = valid_answers()
-    answers[2] = {"question_code": "Q03", "option_codes": ["unknown"], "text_value": "11222333000181"}
-    with pytest.raises(SurveySubmissionError, match="INVALID_ANSWER"):
-        submission_service.submit_survey(
-            session, "CLIMATE_2026", 801, submission(answers), organization_catalog=FakeOrganizationCatalog()
-        )
+    answers = [item for item in valid_answers() if item["question_code"] != "Q03"]
+    if q3_answer is not None:
+        answers.append({"question_code": "Q03", **q3_answer})
+    with pytest.raises(SurveySubmissionError) as error:
+        submission_service.submit_survey(session, "CLIMATE_2026", 801, submission(answers), organization_catalog=FakeOrganizationCatalog())
+    assert error.value.code == expected_code
+    assert error.value.reason == expected_reason
     assert session.added == [] and session.rollback_count == 1
 
 def test_organization_hierarchy_validation_does_not_depend_on_payload_order(monkeypatch):
     session, _, _ = configure_service(monkeypatch)
-    answers = valid_answers(cnpj="00.000.000/E08G-12")
+    answers = valid_answers(work_profile="ADMINISTRATIVE")
 
     submission_service.submit_survey(
         session,
@@ -333,7 +323,7 @@ def test_organization_hierarchy_validation_does_not_depend_on_payload_order(monk
     assert session.commit_count == 1
 
 
-def test_cnpj_is_validated_without_catalog_lookup(monkeypatch):
+def test_work_profile_is_validated_without_organizational_catalog_lookup(monkeypatch):
     session, _, _ = configure_service(monkeypatch)
     catalog = FakeOrganizationCatalog()
 
@@ -341,7 +331,7 @@ def test_cnpj_is_validated_without_catalog_lookup(monkeypatch):
         session,
         "CLIMATE_2026",
         801,
-        submission(valid_answers(cnpj="00.000.000/E08G-12")),
+        submission(valid_answers(work_profile="ADMINISTRATIVE")),
         organization_catalog=catalog,
     )
 
@@ -425,7 +415,7 @@ def test_any_persistence_failure_rolls_back_instead_of_orphaning_response(monkey
             session,
             "CLIMATE_2026",
             801,
-            submission(valid_answers(cnpj="00.000.000/E08G-12")),
+            submission(valid_answers(work_profile="ADMINISTRATIVE")),
             organization_catalog=FakeOrganizationCatalog(),
         )
 

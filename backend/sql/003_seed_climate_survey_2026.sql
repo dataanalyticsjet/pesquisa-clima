@@ -1,8 +1,7 @@
 -- Official questionnaire seed for manual review. Do not execute in this stage.
 -- Source of section/question text, helper text, placeholders, required flags, types, NPS labels, and static choices: src/data/mockSurvey.ts.
--- No USE, CREATE DATABASE, demo regional/base/CNPJ options, or application startup execution.
--- Q1-Q3 use organization catalogs. Q3 additionally has only the fixed "Não sei informar" sentinel.
--- The Q3 sentinel is placed at position 65535; dynamic CNPJ catalog entries must use lower positions.
+-- No USE, CREATE DATABASE, demo regional/base options, or application startup execution.
+-- Q1/Q2 use organization catalogs. Q3 is a static work-profile choice.
 -- This survey is seeded as DRAFT. A human must explicitly approve and activate it later.
 
 START TRANSACTION;
@@ -102,14 +101,15 @@ WHERE section.survey_id = @survey_id AND section.code = 'IDENTIFICACAO'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q02');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 3, 'Q03', 'SELECT', 'Em qual CNPJ você está registrado(a)?', 'Essa informação pode ser consultada na sua Carteira de Trabalho Digital.', 'Selecionar CNPJ/Unidade', NULL, NULL, 1, 3, 'SEGMENT', 'ORG_CNPJ'
+SELECT @survey_id, section.id, 3, 'Q03', 'SINGLE_CHOICE', 'Seu perfil de atuação é:', NULL, NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'IDENTIFICACAO'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q03');
 INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
 VALUES
-    (@question_id, 'unknown', 'Não sei informar', 65535, NULL, 0)
+    (@question_id, 'OPERATIONAL', 'Operacional', 1, NULL, 0),
+    (@question_id, 'ADMINISTRATIVE', 'Administrativo', 2, NULL, 0)
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
@@ -702,7 +702,7 @@ FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q42');
--- Dynamic Q1/Q2/Q3 organization catalog values are intentionally not inserted by this official seed.
--- Only Q3's fixed "Não sei informar" option is seeded; no demo CNPJ values are included.
+-- Dynamic Q1/Q2 organization catalog values are intentionally not inserted by this official seed.
+-- Q3 uses only its two static work-profile options and does not create an organizational segment.
 
 COMMIT;

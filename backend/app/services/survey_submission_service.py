@@ -18,7 +18,6 @@ from app.models.participation import SurveyParticipation
 from app.models.survey import SurveyQuestion, SurveyQuestionOption
 from app.repositories import submission_repository
 from app.schemas.responses import SurveyAnswerSubmission, SurveySubmissionRequest
-from app.services.cnpj import normalize_cnpj, validate_cnpj
 from app.services.organization_catalog import organization_catalog_service
 
 
@@ -32,8 +31,8 @@ TEXT_TYPES = {"TEXTAREA", "SHORT_TEXT"}
 ORG_SEGMENT_TYPES = {
     "ORG_REGIONAL": "REGIONAL",
     "ORG_BASE": "BASE",
-    "ORG_CNPJ": "CNPJ",
 }
+WORK_PROFILE_OPTIONS = {"OPERATIONAL", "ADMINISTRATIVE"}
 
 
 class SurveySubmissionError(Exception):
@@ -97,7 +96,7 @@ def _normalize_answers(
             if submitted.option_codes is not None:
                 reason = "ANSWER_REPRESENTATION_CONFLICT"
             else:
-                reason = "CNPJ_REQUIRED_OR_UNKNOWN" if question.option_source == "ORG_CNPJ" else "ANSWER_VALUE_REQUIRED"
+                reason = "ANSWER_VALUE_REQUIRED"
             raise _answer_error(question, "INVALID_ANSWER", reason)
         code_pattern = REGIONAL_CODE_PATTERN if question.option_source == "ORG_REGIONAL" else CODE_PATTERN
         if submitted.option_codes is not None and any(
@@ -116,24 +115,21 @@ def _normalize_answers(
             if question.required:
                 raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "MISSING_REQUIRED_ANSWER")
             continue
-        is_cnpj_question = question.option_source == "ORG_CNPJ"
-        if question.question_type in OPTION_TYPES and not is_cnpj_question and (
+        is_work_profile_question = question.code == "Q03"
+        if is_work_profile_question and (
+            question.question_type != "SINGLE_CHOICE" or question.option_source != "STATIC"
+        ):
+            raise _answer_error(question, "INVALID_ANSWER", "INVALID_WORK_PROFILE_QUESTION")
+        if question.question_type in OPTION_TYPES and (
             answer.option_codes is None or answer.text_value is not None
         ):
             raise _answer_error(question, "INVALID_ANSWER", "OPTION_CODES_REQUIRED")
-        if is_cnpj_question and question.question_type != "SELECT":
-            raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_CNPJ_QUESTION_TYPE")
         if question.question_type in TEXT_TYPES and (
             answer.text_value is None or answer.option_codes is not None
         ):
             raise _answer_error(question, "INVALID_ANSWER", "TEXT_VALUE_REQUIRED")
         if question.required:
-            if is_cnpj_question:
-                has_unknown_selection = answer.option_codes == ["unknown"]
-                has_cnpj_text = answer.text_value is not None and bool(answer.text_value.strip())
-                if not has_unknown_selection and not has_cnpj_text:
-                    raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "CNPJ_REQUIRED_OR_UNKNOWN")
-            elif question.question_type in OPTION_TYPES and not answer.option_codes:
+            if question.question_type in OPTION_TYPES and not answer.option_codes:
                 raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "EMPTY_OPTION_CODES")
             if question.question_type in TEXT_TYPES and not answer.text_value.strip():
                 raise _answer_error(question, "MISSING_REQUIRED_ANSWER", "EMPTY_TEXT_VALUE")
@@ -144,46 +140,9 @@ def _normalize_answers(
         answer = submitted_by_code.get(question.code)
         if answer is None:
             continue
+        is_work_profile_question = question.code == "Q03"
         if question.question_type not in OPTION_TYPES | TEXT_TYPES:
             raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_QUESTION_TYPE")
-
-        if question.option_source == "ORG_CNPJ":
-            if question.question_type != "SELECT":
-                raise _answer_error(question, "INVALID_ANSWER", "UNSUPPORTED_CNPJ_QUESTION_TYPE")
-            if answer.text_value is not None:
-                if answer.option_codes is not None:
-                    raise _answer_error(question, "INVALID_ANSWER", "ANSWER_REPRESENTATION_CONFLICT")
-                try:
-                    normalized_value = normalize_cnpj(answer.text_value)
-                except ValueError:
-                    raise _answer_error(question, "INVALID_ANSWER", "CNPJ_INVALID_FORMAT") from None
-                if not validate_cnpj(normalized_value):
-                    raise _answer_error(question, "INVALID_ANSWER", "CNPJ_INVALID_CHECK_DIGITS")
-                organization_codes[question.option_source] = normalized_value
-                normalized.append(
-                    ValidatedAnswer(
-                        question=question,
-                        text_value=normalized_value,
-                        organization_code=normalized_value,
-                    )
-                )
-                continue
-
-            if answer.option_codes != ["unknown"]:
-                raise _answer_error(question, "INVALID_ANSWER", "CNPJ_REQUIRED_OR_UNKNOWN")
-            sentinel = question_options.get(question.id, {}).get("unknown")
-            if sentinel is None or sentinel.label != "Não sei informar":
-                raise _answer_error(question, "INVALID_OPTION", "CNPJ_UNKNOWN_OPTION_UNAVAILABLE")
-            organization_codes[question.option_source] = "unknown"
-            normalized.append(
-                ValidatedAnswer(
-                    question=question,
-                    text_value=None,
-                    option_ids=(sentinel.id,),
-                    organization_code="unknown",
-                )
-            )
-            continue
 
         if question.question_type in TEXT_TYPES:
             if answer.option_codes is not None or answer.text_value is None:
@@ -232,6 +191,10 @@ def _normalize_answers(
             continue
 
         options_by_code = question_options.get(question.id, {})
+        if is_work_profile_question and (
+            len(codes) != 1 or codes[0] not in WORK_PROFILE_OPTIONS
+        ):
+            raise _answer_error(question, "INVALID_OPTION", "INVALID_WORK_PROFILE")
         selected = [options_by_code.get(code) for code in codes]
         if any(option is None for option in selected):
             raise _answer_error(question, "INVALID_OPTION", "INVALID_OPTION")
@@ -306,7 +269,7 @@ def submit_survey(
 
         for option_source, segment_type in ORG_SEGMENT_TYPES.items():
             segment_code = organization_codes.get(option_source)
-            if not segment_code or (option_source == "ORG_CNPJ" and segment_code == "unknown"):
+            if not segment_code:
                 continue
             submission_repository.add_anonymous_response_segment(
                 session,

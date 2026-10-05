@@ -67,11 +67,11 @@ As FKs compostas garantem que `(response_id, survey_id)` de uma resposta perten�
 
 A atomicidade não requer FK entre os domínios. A submissão primeiro valida a pesquisa e a elegibilidade, salva resposta/itens, insere a participação e confirma tudo junto; qualquer falha reverte todas as gravações.
 
-## Opções dinâmicas Q1–Q3
+## Opções de operação e perfil de atuação
 
-As perguntas Q1, Q2 e Q3 usam `option_source` `ORG_REGIONAL`, `ORG_BASE` e `ORG_CNPJ`, respectivamente. O seed oficial não inclui listas demo de regionais, bases ou CNPJs. No futuro, o backend fornecerá opções válidas das fontes organizacionais aprovadas. As respostas oficiais escolhidas em Q1, Q2 e Q3 abastecem os segmentos anônimos Regional, Base e CNPJ, respectivamente, somente como códigos e sem identidade; se Q3 for “Não sei informar”, não se cria o segmento CNPJ. O valor da opção de `SELECT` organizacional fica em `response_answers.text_value` como código validado.
+Q1 e Q2 usam `option_source` `ORG_REGIONAL` e `ORG_BASE`; o seed não inclui opções organizacionais demonstrativas. O backend fornece as Regionais e unidades válidas a partir do catálogo aprovado. As seleções validadas são persistidas em `response_answers.text_value` e alimentam somente os segmentos anônimos `REGIONAL` e `BASE`.
 
-Q3 também mantém a opção fixa “Não sei informar”, com código reservado `unknown`, além do catálogo dinâmico de CNPJs. Para não misturar valores de catálogo fictícios com dados oficiais, o seed insere somente esse sentinela estático na posição 65535; entradas dinâmicas devem usar posições menores e não podem reutilizar o código `unknown`. A API compõe a lista de CNPJs oficiais com esse sentinela no final. Q1/Q2 não recebem opções no seed.
+Q3 é uma pergunta obrigatória `SINGLE_CHOICE`, com `option_source` `STATIC` e opções `OPERATIONAL` / “Operacional” e `ADMINISTRATIVE` / “Administrativo”. É uma categoria de perfil e não gera segmento organizacional. A aplicação mantém opções antigas de Q3 fora da definição atual; respostas anônimas históricas e os valores legados de CNPJ no schema são preservados para compatibilidade, sem criar novas respostas ou segmentos CNPJ.
 
 Área não é uma pergunta do formulário oficial e não foi adicionada às perguntas. A segmentação prevê `AREA`, mas o comentário no SQL registra que sua fonte só será definida antes da implementação do backend; não inferir nem preencher esse recorte até aprovação formal.
 

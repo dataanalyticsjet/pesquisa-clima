@@ -29,10 +29,10 @@ def clear_http_state():
 @pytest.mark.parametrize(
     "question_code,replacement,error_code,reason",
     [
-        ("Q03", {"option_codes": ["unknown"], "text_value": "private-answer"}, "INVALID_ANSWER", "ANSWER_REPRESENTATION_CONFLICT"),
-        ("Q03", {"text_value": ""}, "MISSING_REQUIRED_ANSWER", "CNPJ_REQUIRED_OR_UNKNOWN"),
-        ("Q03", {"text_value": "not-a-cnpj"}, "INVALID_ANSWER", "CNPJ_INVALID_FORMAT"),
-        ("Q03", {"text_value": "00.000.000/E08G-13"}, "INVALID_ANSWER", "CNPJ_INVALID_CHECK_DIGITS"),
+        ("Q03", {"text_value": "private-answer"}, "INVALID_ANSWER", "OPTION_CODES_REQUIRED"),
+        ("Q03", {"option_codes": []}, "MISSING_REQUIRED_ANSWER", "EMPTY_OPTION_CODES"),
+        ("Q03", {"option_codes": ["OPERATIONAL", "ADMINISTRATIVE"]}, "INVALID_ANSWER", "SINGLE_OPTION_REQUIRED"),
+        ("Q03", {"option_codes": ["UNKNOWN_PROFILE"]}, "INVALID_OPTION", "INVALID_WORK_PROFILE"),
         ("Q01", {"option_codes": ["NOT/APPROVED"]}, "INVALID_OPTION", "INVALID_REGIONAL"),
         ("Q04", {"option_codes": ["1/3"]}, "INVALID_ANSWER", "INVALID_OPTION_CODE_FORMAT"),
         ("Q04", {"text_value": "5"}, "INVALID_ANSWER", "OPTION_CODES_REQUIRED"),
@@ -72,17 +72,18 @@ def configure_http(monkeypatch):
     return session
 
 
-def test_http_diagnostic_does_not_expose_cnpj_payload_identity_or_logs(monkeypatch, caplog):
+def test_http_profile_diagnostic_does_not_expose_payload_identity_or_logs(monkeypatch, caplog):
     session = configure_http(monkeypatch)
-    answers = valid_answers(cnpj="00.000.000/E08G-13")
+    answers = valid_answers()
+    answers[2] = {"question_code": "Q03", "text_value": "PRIVATE_WORK_PROFILE_MARKER"}
     answers.append({"question_code": "Q40", "text_value": "sensitive-test-comment"})
     with caplog.at_level(logging.INFO, logger=submission_service.__name__):
         response = client.post("/api/surveys/CLIMATE_2026/responses", json={"answers": answers})
     assert response.status_code == 422
     assert response.json() == {"detail": {
-        "code": "INVALID_ANSWER", "question_code": "Q03", "reason": "CNPJ_INVALID_CHECK_DIGITS"
+        "code": "INVALID_ANSWER", "question_code": "Q03", "reason": "OPTION_CODES_REQUIRED"
     }}
-    for private_value in ("00.000.000/E08G-13", "sensitive-test-comment", "response_id", "user_id", "email", "text_value", "option_codes"):
+    for private_value in ("PRIVATE_WORK_PROFILE_MARKER", "sensitive-test-comment", "response_id", "user_id", "email", "text_value", "option_codes"):
         assert private_value not in response.text
         assert private_value not in caplog.text
     assert session.commit_count == 0 and session.rollback_count == 1

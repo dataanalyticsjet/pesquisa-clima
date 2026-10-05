@@ -115,8 +115,10 @@ def official_definition():
                 option_attributes["id"] = 10000 + len(options)
                 option_attributes["is_exclusive"] = bool(option_attributes["is_exclusive"])
                 options.append(SimpleNamespace(**option_attributes))
+    section_count = len(re.findall(r"INSERT INTO survey_sections", seed))
+    assert section_count == 13, "The official survey must retain all sections"
     assert len(questions) == 42, "The fixture must use all official questions"
-    return SimpleNamespace(code=survey_code, questions=questions, options=options)
+    return SimpleNamespace(code=survey_code, section_count=section_count, questions=questions, options=options)
 
 
 class FakeSession:
@@ -188,8 +190,8 @@ def frontend_payload(definition, regional, sc):
             codes = [regional]
         elif question.option_source == "ORG_BASE":
             codes = [sc]
-        elif question.option_source == "ORG_CNPJ":
-            codes = [next(option.code for option in available if option.label == "Não sei informar")]
+        elif question.code == "Q03":
+            codes = ["OPERATIONAL"]
         elif question.question_type in {"TEXTAREA", "SHORT_TEXT"}:
             payload.append({"question_code": question_code, "text_value": SYNTHETIC_TEXT[question_code]})
             continue
@@ -230,12 +232,15 @@ def full_submission_http(monkeypatch, official_definition):
 def test_official_seed_fixture_retains_real_question_and_option_contract(official_definition):
     questions = official_definition.questions
     by_code = {question.code: question for question in questions}
+    assert official_definition.section_count == 13
     assert [question.question_number for question in questions] == list(range(1, 43))
     assert [question.code for question in questions] == [f"Q{number:02d}" for number in range(1, 43)]
     assert {question.code for question in questions if not question.required} == {"Q40", "Q41", "Q42"}
     assert [by_code[code].option_source for code in ("Q01", "Q02", "Q03")] == [
-        "ORG_REGIONAL", "ORG_BASE", "ORG_CNPJ"
+        "ORG_REGIONAL", "ORG_BASE", "STATIC"
     ]
+    assert by_code["Q03"].question_type == "SINGLE_CHOICE"
+    assert by_code["Q03"].text == "Seu perfil de atuação é:"
     assert by_code["Q01"].text == "Qual é a sua Regional?"
     assert by_code["Q06"].question_type == "MULTIPLE_CHOICE"
     assert by_code["Q39"].question_type == "NPS"
@@ -245,7 +250,9 @@ def test_official_seed_fixture_retains_real_question_and_option_contract(officia
     assert {case[0] for case in REGIONAL_SC_CASES} == set(OrganizationCatalogService().get_regionals())
     assert not any(option.question_id in {by_code["Q01"].id, by_code["Q02"].id} for option in official_definition.options)
     q3_options = [option for option in official_definition.options if option.question_id == by_code["Q03"].id]
-    assert [(option.code, option.label) for option in q3_options] == [("unknown", "Não sei informar")]
+    assert [(option.code, option.label) for option in q3_options] == [
+        ("OPERATIONAL", "Operacional"), ("ADMINISTRATIVE", "Administrativo")
+    ]
     q6_options = [option for option in official_definition.options if option.question_id == by_code["Q06"].id]
     assert len(q6_options) == 9
     assert [(option.code, option.is_exclusive) for option in q6_options][-1] == ("OPT_09", True)
@@ -263,7 +270,7 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert len(payload["answers"]) == 42
     assert by_code["Q01"] == {"question_code": "Q01", "option_codes": [regional]}
     assert by_code["Q02"] == {"question_code": "Q02", "option_codes": [sc]}
-    assert by_code["Q03"] == {"question_code": "Q03", "option_codes": ["unknown"]}
+    assert by_code["Q03"] == {"question_code": "Q03", "option_codes": ["OPERATIONAL"]}
     assert by_code["Q06"]["option_codes"] == ["OPT_01", "OPT_02"]
     assert by_code["Q39"]["option_codes"] == ["10"]
     assert all(set(answer) in ({"question_code", "option_codes"}, {"question_code", "text_value"}) for answer in payload["answers"])
@@ -328,18 +335,16 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert str(SYNTHETIC_USER_ID) not in response.text
     assert str(SYNTHETIC_USER_ID) not in caplog.text
 
-@pytest.mark.parametrize("variant", ["documented_cnpj", "exclusive_choice", "nps_zero"])
-def test_http_full_official_survey_accepts_cnpj_and_exclusive_choice_variants(
+@pytest.mark.parametrize("variant", ["administrative_profile", "exclusive_choice", "nps_zero"])
+def test_http_full_official_survey_accepts_work_profile_and_choice_variants(
     variant, official_definition, full_submission_http, caplog
 ):
     http, session, catalog = full_submission_http
     payload = frontend_payload(official_definition, "MG/SPN", "CGE")
     by_code = {answer["question_code"]: answer for answer in payload["answers"]}
     question_by_code = {question.code: question for question in official_definition.questions}
-    if variant == "documented_cnpj":
-        # Public official example, unrelated to any participant's submitted CNPJ.
-        by_code["Q03"].clear()
-        by_code["Q03"].update({"question_code": "Q03", "text_value": "00.000.000/E08G-12"})
+    if variant == "administrative_profile":
+        by_code["Q03"]["option_codes"] = ["ADMINISTRATIVE"]
     elif variant == "nps_zero":
         by_code["Q39"]["option_codes"] = ["0"]
     else:
@@ -356,15 +361,15 @@ def test_http_full_official_survey_accepts_cnpj_and_exclusive_choice_variants(
     assert session.commit_count == 1 and session.rollback_count == 0
     answers = [row for row in session.committed if isinstance(row, ResponseAnswer)]
     assert len(answers) == 42
-    if variant == "documented_cnpj":
+    if variant == "administrative_profile":
         q3 = question_by_code["Q03"]
-        assert next(row for row in answers if row.question_id == q3.id).text_value == "00000000E08G12"
-        assert not any(isinstance(row, ResponseAnswerOption) and row.question_id == q3.id for row in session.committed)
+        assert next(row for row in answers if row.question_id == q3.id).text_value is None
+        q3_option = next(option for option in official_definition.options if option.question_id == q3.id and option.code == "ADMINISTRATIVE")
+        selected_q3 = [row for row in session.committed if isinstance(row, ResponseAnswerOption) and row.question_id == q3.id]
+        assert len(selected_q3) == 1 and selected_q3[0].option_id == q3_option.id
         assert {row.segment_type: row.segment_code for row in session.committed if isinstance(row, AnonymousResponseSegment)} == {
-            "REGIONAL": "MG/SPN", "BASE": "CGE", "CNPJ": "00000000E08G12"
+            "REGIONAL": "MG/SPN", "BASE": "CGE"
         }
-        assert "00.000.000/E08G-12" not in response.text + caplog.text
-        assert "00000000E08G12" not in response.text + caplog.text
     elif variant == "nps_zero":
         q39 = question_by_code["Q39"]
         zero_option = next(option for option in official_definition.options if option.question_id == q39.id and option.code == "0")
