@@ -82,8 +82,13 @@ def request_external_login_code(
             return False
 
         latest = external_auth_repository.get_latest_for_email(session, normalized, for_update=True)
-        if latest is not None and (now - latest.created_at).total_seconds() < settings.auth_code_resend_seconds:
-            return False
+        if latest is not None:
+            # expires_at is written from this service's UTC clock. Derive the
+            # issuance time from it instead of comparing MySQL's created_at,
+            # whose server-local timezone may differ from the application.
+            issued_at = latest.expires_at - timedelta(minutes=settings.auth_code_ttl_minutes)
+            if (now - issued_at).total_seconds() < settings.auth_code_resend_seconds:
+                return False
 
         code = f"{secrets.randbelow(1_000_000):06d}"
         (mailer or email_service).send_login_code(

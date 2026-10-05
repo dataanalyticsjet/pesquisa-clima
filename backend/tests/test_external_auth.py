@@ -185,12 +185,48 @@ def test_hash_is_keyed_hmac_and_email_bound():
 
 
 def test_request_uses_cooldown_without_invalidating_historical_rows(monkeypatch):
-    recent = code_record()
-    recent.created_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    issued_at = datetime(2026, 10, 5, 15, 8, 48)
+    recent = code_record(expires=issued_at + timedelta(minutes=settings.auth_code_ttl_minutes))
+    recent.created_at = issued_at + timedelta(hours=8)
+    monkeypatch.setattr(external_auth_service, "_now_utc", lambda: issued_at + timedelta(seconds=59))
     captured = setup_request_repositories(monkeypatch, latest=recent)
     mailer = FakeMailer()
     result = external_auth_service.request_external_login_code(FakeSession(), recent.email, mailer=mailer)
     assert result is False and mailer.sent == [] and captured["codes"] == []
+
+
+def test_request_sends_again_at_cooldown_boundary_despite_mysql_created_at(monkeypatch):
+    issued_at = datetime(2026, 10, 5, 15, 8, 48)
+    latest = code_record(expires=issued_at + timedelta(minutes=settings.auth_code_ttl_minutes))
+    latest.created_at = issued_at + timedelta(hours=8)
+    monkeypatch.setattr(external_auth_service, "_now_utc", lambda: issued_at + timedelta(seconds=60))
+    captured = setup_request_repositories(monkeypatch, latest=latest)
+    mailer = FakeMailer()
+
+    result = external_auth_service.request_external_login_code(
+        FakeSession(), latest.email, mailer=mailer
+    )
+
+    assert result is True
+    assert len(mailer.sent) == 1
+    assert len(captured["codes"]) == 1
+
+
+def test_request_mail_failure_is_generic_and_does_not_log_email_or_code(monkeypatch, caplog):
+    setup_request_repositories(monkeypatch)
+    monkeypatch.setattr(external_auth_service.secrets, "randbelow", lambda limit: 123456)
+
+    class UnavailableMailer:
+        def send_login_code(self, recipient, code, ttl_minutes):
+            raise EmailUnavailableError("recipient x@example.com code 123456")
+
+    with pytest.raises(external_auth_service.ExternalAuthError, match="external_auth_unavailable"):
+        external_auth_service.request_external_login_code(
+            FakeSession(), "x@example.com", mailer=UnavailableMailer()
+        )
+
+    assert "x@example.com" not in caplog.text
+    assert "123456" not in caplog.text
 
 
 def test_only_the_latest_code_is_selected_for_validation(monkeypatch):
@@ -282,8 +318,11 @@ def test_incorrect_code_increments_attempts(otp, monkeypatch):
 
 
 def test_expired_code_is_rejected(monkeypatch):
-    old = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=1)
+    now = datetime(2026, 10, 5, 15, 8, 48)
+    old = now - timedelta(seconds=1)
     latest = code_record(expires=old)
+    latest.created_at = now + timedelta(hours=8)
+    monkeypatch.setattr(external_auth_service, "_now_utc", lambda: now)
     setup_verify_repositories(monkeypatch, latest=latest)
     with pytest.raises(external_auth_service.ExternalAuthError, match="expired_code"):
         external_auth_service.verify_external_login_code(FakeSession(), latest.email, "123456")
