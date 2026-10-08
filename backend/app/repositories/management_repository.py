@@ -67,6 +67,7 @@ def get_q39_score_counts(session: Session, survey_id: int) -> list[tuple[int, in
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.code == "Q39",
             SurveyQuestion.question_type == "NPS",
             SurveyQuestionOption.score_value.between(0, 10),
@@ -97,6 +98,7 @@ def get_pillar_definitions(session: Session, survey_id: int) -> list[tuple[str, 
         .where(
             SurveySection.survey_id == survey_id,
             SurveySection.analysis_type.in_(("SCORE", "MIXED")),
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
         )
@@ -150,6 +152,7 @@ def get_pillar_answer_score_counts(
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
         )
@@ -200,6 +203,7 @@ def get_pillar_respondent_counts(session: Session, survey_id: int) -> list[tuple
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
             SurveyQuestionOption.score_value.between(1, 5),
@@ -226,6 +230,7 @@ def get_attention_question_definitions(
         )
         .where(
             SurveyQuestion.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
         )
@@ -282,6 +287,7 @@ def get_attention_group_respondent_counts(
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
             SurveyQuestionOption.score_value.between(1, 5),
@@ -341,6 +347,7 @@ def get_attention_score_counts(
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
             AnonymousResponseSegment.segment_type.in_(("REGIONAL", "BASE")),
@@ -410,6 +417,7 @@ def get_attention_question_respondent_counts(
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.analysis_role == "SCORE",
             SurveyQuestion.question_type == "LIKERT",
             SurveyQuestionOption.score_value.between(1, 5),
@@ -435,6 +443,7 @@ def get_voice_question_definitions(
         select(SurveyQuestion.code, SurveyQuestion.text, SurveyQuestion.question_type)
         .where(
             SurveyQuestion.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
         )
         .order_by(SurveyQuestion.position)
@@ -462,6 +471,7 @@ def get_voice_respondent_counts(session: Session, survey_id: int) -> list[tuple[
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
             ResponseAnswer.text_value.is_not(None),
             func.trim(ResponseAnswer.text_value) != "",
@@ -488,6 +498,7 @@ def get_voice_text_answers(session: Session, survey_id: int) -> list[tuple[str, 
         )
         .where(
             ResponseAnswer.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
             SurveyQuestion.code.in_(("Q40", "Q41", "Q42")),
             ResponseAnswer.text_value.is_not(None),
             func.trim(ResponseAnswer.text_value) != "",

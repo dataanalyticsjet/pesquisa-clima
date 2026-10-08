@@ -29,7 +29,10 @@ def get_participation(
 def get_questions_by_survey(session: Session, survey_id: int) -> list[SurveyQuestion]:
     statement = (
         select(SurveyQuestion)
-        .where(SurveyQuestion.survey_id == survey_id)
+        .where(
+            SurveyQuestion.survey_id == survey_id,
+            SurveyQuestion.question_number > 0,
+        )
         .order_by(SurveyQuestion.question_number, SurveyQuestion.id)
     )
     return list(session.scalars(statement).all())

@@ -1,6 +1,7 @@
 -- Official questionnaire seed for manual review. Do not execute in this stage.
 -- Source of section/question text, helper text, placeholders, required flags, types, NPS labels, and static choices: src/data/mockSurvey.ts.
 -- No USE, CREATE DATABASE, demo regional/base options, or application startup execution.
+-- Existing databases must use backend/sql/manual/unify_climate_2026_questions_32_33.sql; this seed does not archive historical Q33 rows.
 -- Q1/Q2 use organization catalogs. Q3 is a static work-profile choice.
 -- This survey is seeded as DRAFT. A human must explicitly approve and activate it later.
 
@@ -548,7 +549,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 32, 'Q32', 'LIKERT', 'Os sanitários da unidade são mantidos limpos e em boas condições de higiene.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
+SELECT @survey_id, section.id, 32, 'Q32', 'LIKERT', 'Os sanitários da unidade são mantidos em condições de higiene, conservados e em bom estado de funcionamento?', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -563,22 +564,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 33, 'Q33', 'LIKERT', 'Os sanitários estão conservados e em bom estado de funcionamento.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
-FROM survey_sections AS section
-WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
-ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
-SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q33');
-INSERT INTO survey_question_options (question_id, code, label, position, score_value, is_exclusive)
-VALUES
-    (@question_id, '1', 'Discordo totalmente', 1, 1, 0),
-    (@question_id, '2', 'Discordo', 2, 2, 0),
-    (@question_id, '3', 'Nem concordo nem discordo', 3, 3, 0),
-    (@question_id, '4', 'Concordo', 4, 4, 0),
-    (@question_id, '5', 'Concordo totalmente', 5, 5, 0)
-ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
-
-INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 34, 'Q34', 'LIKERT', 'O espaço disponível para realizar as refeições é adequado à quantidade de colaboradores.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
+SELECT @survey_id, section.id, 33, 'Q34', 'LIKERT', 'O espaço disponível para realizar as refeições é adequado à quantidade de colaboradores.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -593,7 +579,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 35, 'Q35', 'LIKERT', 'Os equipamentos disponíveis para apoio às refeições, como micro-ondas e geladeira, são adequados às necessidades dos colaboradores.', NULL, NULL, NULL, NULL, 1, 4, 'SCORE', 'STATIC'
+SELECT @survey_id, section.id, 34, 'Q35', 'LIKERT', 'Os equipamentos disponíveis para apoio às refeições, como micro-ondas e geladeira, são adequados às necessidades dos colaboradores.', NULL, NULL, NULL, NULL, 1, 3, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'CONDICOES_AMBIENTE'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -608,7 +594,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 36, 'Q36', 'LIKERT', 'Pretendo continuar trabalhando na J&T Express nos próximos 12 meses.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
+SELECT @survey_id, section.id, 35, 'Q36', 'LIKERT', 'Pretendo continuar trabalhando na J&T Express nos próximos 12 meses.', NULL, NULL, NULL, NULL, 1, 1, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -623,7 +609,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 37, 'Q37', 'LIKERT', 'Tenho orgulho de trabalhar na J&T Express.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
+SELECT @survey_id, section.id, 36, 'Q37', 'LIKERT', 'Tenho orgulho de trabalhar na J&T Express.', NULL, NULL, NULL, NULL, 1, 2, 'SCORE', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -638,7 +624,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 38, 'Q38', 'SINGLE_CHOICE', 'Qual fator que mais poderia influenciar na sua decisão de sair da empresa?', 'Escolha o principal.', NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
+SELECT @survey_id, section.id, 37, 'Q38', 'SINGLE_CHOICE', 'Qual fator que mais poderia influenciar na sua decisão de sair da empresa?', 'Escolha o principal.', NULL, NULL, NULL, 1, 3, 'CATEGORY', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERMANENCIA'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -664,7 +650,7 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 39, 'Q39', 'NPS', 'Em uma escala de 0 a 10, o quanto você recomendaria a J&T Express como um bom lugar para trabalhar?', NULL, NULL, 'Não recomendaria', 'Recomendaria com certeza', 1, 1, 'NPS', 'STATIC'
+SELECT @survey_id, section.id, 38, 'Q39', 'NPS', 'Em uma escala de 0 a 10, o quanto você recomendaria a J&T Express como um bom lugar para trabalhar?', NULL, NULL, 'Não recomendaria', 'Recomendaria com certeza', 1, 1, 'NPS', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'PERCEPCAO'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
@@ -685,19 +671,19 @@ VALUES
 ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position), score_value = VALUES(score_value), is_exclusive = VALUES(is_exclusive);
 
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 40, 'Q40', 'TEXTAREA', 'Que mudança ajudaria a organizar melhor a jornada de trabalho na sua área?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 1, 'OPEN_TEXT', 'STATIC'
+SELECT @survey_id, section.id, 39, 'Q40', 'TEXTAREA', 'Que mudança ajudaria a organizar melhor a jornada de trabalho na sua área?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 1, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q40');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 41, 'Q41', 'TEXTAREA', 'O que a empresa poderia melhorar para tornar sua experiência de trabalho melhor?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 2, 'OPEN_TEXT', 'STATIC'
+SELECT @survey_id, section.id, 40, 'Q41', 'TEXTAREA', 'O que a empresa poderia melhorar para tornar sua experiência de trabalho melhor?', 'Resposta aberta. Opcional.', 'Escreva sua resposta (opcional)', NULL, NULL, 0, 2, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);
 SET @question_id = (SELECT id FROM survey_questions WHERE survey_id = @survey_id AND code = 'Q41');
 INSERT INTO survey_questions (survey_id, section_id, question_number, code, question_type, text, helper_text, placeholder, low_label, high_label, required, position, analysis_role, option_source)
-SELECT @survey_id, section.id, 42, 'Q42', 'SHORT_TEXT', 'O que você mais valoriza em trabalhar na J&T Express?', 'Responda em uma palavra. Opcional.', 'Uma palavra (opcional)', NULL, NULL, 0, 3, 'OPEN_TEXT', 'STATIC'
+SELECT @survey_id, section.id, 41, 'Q42', 'SHORT_TEXT', 'O que você mais valoriza em trabalhar na J&T Express?', 'Responda em uma palavra. Opcional.', 'Uma palavra (opcional)', NULL, NULL, 0, 3, 'OPEN_TEXT', 'STATIC'
 FROM survey_sections AS section
 WHERE section.survey_id = @survey_id AND section.code = 'SUA_VOZ'
 ON DUPLICATE KEY UPDATE section_id = VALUES(section_id), question_type = VALUES(question_type), text = VALUES(text), helper_text = VALUES(helper_text), placeholder = VALUES(placeholder), low_label = VALUES(low_label), high_label = VALUES(high_label), required = VALUES(required), position = VALUES(position), analysis_role = VALUES(analysis_role), option_source = VALUES(option_source);

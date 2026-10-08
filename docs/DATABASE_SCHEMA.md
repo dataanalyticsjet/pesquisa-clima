@@ -4,7 +4,7 @@
 
 Este documento descreve uma proposta para revisão humana. O banco ainda não foi escolhido nem criado. Os arquivos SQL não contêm `USE` nem `CREATE DATABASE`, não são executados pela aplicação e não foram aplicados. Esta etapa não cria conexão, models ORM, repositories, services ou APIs.
 
-O questionário de 2026 tem uma pesquisa, 13 seções e 42 perguntas. O seed é criado a partir de `src/data/mockSurvey.ts`; essa fonte não deve ser alterada para preparar o banco.
+O questionário de 2026 tem uma pesquisa, 13 seções e 41 perguntas ativas. O seed acompanha `src/data/mockSurvey.ts`. O schema não tem coluna de status da pergunta; para arquivar Q33 sem apagar seu histórico, a convenção é manter a linha com `question_number = 0`. Bancos existentes precisam da atualização manual em `backend/sql/manual/unify_climate_2026_questions_32_33.sql` antes da nova definição entrar em uso.
 
 ## Separação entre identidade e respostas
 
@@ -95,6 +95,6 @@ O valor inicial é 5. Exemplo: Regional SPS + Área Operações + Base X com tr�
 
 1. `backend/sql/001_identity_and_access.sql` — tabelas de identidade e acesso.
 2. `backend/sql/002_survey_schema.sql` — pesquisas, perguntas, participação e respostas anônimas.
-3. `backend/sql/003_seed_climate_survey_2026.sql` — uma pesquisa em estado `DRAFT`, 13 seções, 42 perguntas e opções estáticas oficiais.
+3. `backend/sql/003_seed_climate_survey_2026.sql` — uma pesquisa em estado `DRAFT`, 13 seções, 41 perguntas e opções estáticas oficiais.
 
 Todos são InnoDB com `utf8mb4` / `utf8mb4_unicode_ci`, não escolhem nome de database e aguardam revisão humana antes de qualquer aplicação.

@@ -64,12 +64,14 @@ def read_data():
         make_question(2, 1, "ORG_BASE"),
         make_question(1, 1, "ORG_REGIONAL"),
         make_question(3, 1, "STATIC", question_type="SINGLE_CHOICE"),
+        make_question(33, 2, "STATIC", question_type="LIKERT"),
         make_question(6, 2, "STATIC", question_type="MULTIPLE_CHOICE"),
         make_question(39, 2, "STATIC", question_type="NPS"),
         make_question(40, 2, "STATIC", required=False, question_type="TEXTAREA"),
         make_question(41, 2, "STATIC", required=False, question_type="TEXTAREA"),
         make_question(42, 2, "STATIC", required=False, question_type="SHORT_TEXT"),
     ]
+    questions[3].question_number = 0
     options = [
         make_option(1, "demo-regional", "Regional fictícia", 1),
         make_option(2, "demo-base", "Base fictícia", 1),
@@ -121,6 +123,7 @@ def test_service_orders_definition_and_filters_organizational_options(monkeypatc
     first_questions = {question["code"]: question for question in first_section["questions"]}
     second_section = result["sections"][1]
     assert [question["code"] for question in second_section["questions"]] == ["Q06", "Q39", "Q40", "Q41", "Q42"]
+    assert all(question["code"] != "Q33" for section in result["sections"] for question in section["questions"])
     second_questions = {question["code"]: question for question in second_section["questions"]}
 
     assert all(isinstance(question["required"], bool) for section in result["sections"] for question in section["questions"])

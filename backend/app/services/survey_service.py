@@ -19,6 +19,8 @@ def get_survey_definition(survey_code: str, *, require_active: bool = False) -> 
 
     questions_by_section: dict[int, list[object]] = {}
     for question in data.questions:
+        if question.question_number <= 0:
+            continue
         questions_by_section.setdefault(question.section_id, []).append(question)
 
     sections = []

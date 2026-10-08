@@ -31,7 +31,10 @@ def get_survey_by_code(survey_code: str) -> SurveyReadData | None:
         questions = list(
             session.scalars(
                 select(SurveyQuestion)
-                .where(SurveyQuestion.survey_id == survey.id)
+                .where(
+                    SurveyQuestion.survey_id == survey.id,
+                    SurveyQuestion.question_number > 0,
+                )
                 .order_by(SurveyQuestion.section_id, SurveyQuestion.position, SurveyQuestion.id)
             ).all()
         )

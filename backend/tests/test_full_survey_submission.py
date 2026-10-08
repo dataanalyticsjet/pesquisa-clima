@@ -24,6 +24,7 @@ from app.services.organization_catalog import OrganizationCatalogService
 
 
 SEED_PATH = Path(__file__).resolve().parents[1] / "sql" / "003_seed_climate_survey_2026.sql"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SURVEY_ID = 2026
 SYNTHETIC_USER_ID = 900001
 REGIONAL_SC_CASES = (
@@ -118,7 +119,7 @@ def official_definition():
                 options.append(SimpleNamespace(**option_attributes))
     section_count = len(re.findall(r"INSERT INTO survey_sections", seed))
     assert section_count == 13, "The official survey must retain all sections"
-    assert len(questions) == 42, "The fixture must use all official questions"
+    assert len(questions) == 41, "The fixture must use all active official questions"
     return SimpleNamespace(code=survey_code, section_count=section_count, questions=questions, options=options)
 
 
@@ -234,8 +235,28 @@ def test_official_seed_fixture_retains_real_question_and_option_contract(officia
     questions = official_definition.questions
     by_code = {question.code: question for question in questions}
     assert official_definition.section_count == 13
-    assert [question.question_number for question in questions] == list(range(1, 43))
-    assert [question.code for question in questions] == [f"Q{number:02d}" for number in range(1, 43)]
+    assert len(questions) == 41
+    assert [question.question_number for question in questions] == list(range(1, 42))
+    expected_codes = [f"Q{number:02d}" for number in range(1, 33)] + [
+        f"Q{number:02d}" for number in range(34, 43)
+    ]
+    assert [question.code for question in questions] == expected_codes
+    assert "Q33" not in by_code
+    assert sum("sanitários" in question.text.lower() for question in questions) == 1
+    assert by_code["Q32"].text == (
+        "Os sanitários da unidade são mantidos em condições de higiene, "
+        "conservados e em bom estado de funcionamento?"
+    )
+    assert [(by_code[code].question_number, by_code[code].position) for code in ("Q32", "Q34", "Q35")] == [
+        (32, 1), (33, 2), (34, 3)
+    ]
+    assert by_code["Q39"].question_number == 38
+    assert by_code["Q40"].question_number == 39
+    assert by_code["Q41"].question_number == 40
+    assert by_code["Q42"].question_number == 41
+    manual_sql = (PROJECT_ROOT / "backend" / "sql" / "manual" / "unify_climate_2026_questions_32_33.sql").read_text(encoding="utf-8")
+    assert "SET question_number = 0" in manual_sql
+    assert not re.search(r"\bDELETE\s+FROM\s+(survey_questions|response_answers)", manual_sql, re.IGNORECASE)
     assert {question.code for question in questions if not question.required} == {"Q40", "Q41", "Q42"}
     assert [by_code[code].option_source for code in ("Q01", "Q02", "Q03")] == [
         "ORG_REGIONAL", "ORG_BASE", "STATIC"
@@ -261,14 +282,42 @@ def test_official_seed_fixture_retains_real_question_and_option_contract(officia
     assert [option.code for option in q39_options] == [str(score) for score in range(11)]
 
 
+def test_frontend_sources_and_chinese_translation_match_the_41_active_codes(official_definition):
+    mock_source = (PROJECT_ROOT / "src" / "data" / "mockSurvey.ts").read_text(encoding="utf-8")
+    mock_questions = re.findall(r'\{ id: "q(\d+)", number: (\d+),', mock_source)
+    assert len(mock_questions) == 41
+    assert [int(number) for _code, number in mock_questions] == list(range(1, 42))
+    assert [int(code) for code, _number in mock_questions] == [
+        *range(1, 33), *range(34, 43)
+    ]
+    assert (
+        'id: "q32", number: 32, sectionId: "condicoes-ambiente", type: "likert", '
+        'text: "Os sanitários da unidade são mantidos em condições de higiene, '
+        'conservados e em bom estado de funcionamento?", required: true'
+    ) in mock_source
+
+    chinese_source = (PROJECT_ROOT / "src" / "i18n" / "survey.zh.ts").read_text(encoding="utf-8")
+    question_map = re.search(
+        r"const questions: Record<string, QuestionTranslation> = \{(?P<body>.*?)\n\};",
+        chinese_source,
+        re.DOTALL,
+    )
+    assert question_map is not None
+    translated_codes = re.findall(r"^\s*Q(\d{2}):", question_map.group("body"), re.MULTILINE)
+    active_codes = [question.code.removeprefix("Q") for question in official_definition.questions]
+    assert translated_codes == active_codes
+    assert 'Q32: { text: "本单位的卫生间保持卫生、设施完好且运行正常吗？" }' in question_map.group("body")
+    assert not re.search(r"^\s*Q33:", question_map.group("body"), re.MULTILINE)
+
+
 @pytest.mark.parametrize("regional,sc", REGIONAL_SC_CASES, ids=[regional for regional, _ in REGIONAL_SC_CASES])
-def test_http_accepts_all_42_official_answers_for_every_regional(
+def test_http_accepts_all_41_official_answers_for_every_regional(
     regional, sc, official_definition, full_submission_http, caplog
 ):
     http, session, catalog = full_submission_http
     payload = frontend_payload(official_definition, regional, sc)
     by_code = {answer["question_code"]: answer for answer in payload["answers"]}
-    assert len(payload["answers"]) == 42
+    assert len(payload["answers"]) == 41
     assert by_code["Q01"] == {"question_code": "Q01", "option_codes": [regional]}
     assert by_code["Q02"] == {"question_code": "Q02", "option_codes": [sc]}
     assert by_code["Q03"] == {"question_code": "Q03", "option_codes": ["OPERATIONAL"]}
@@ -285,7 +334,7 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert session.rollback_count == 0
     rows = session.committed
     answers = [row for row in rows if isinstance(row, ResponseAnswer)]
-    assert len(answers) == 42
+    assert len(answers) == 41
     assert {row.question_id for row in answers} == {question.id for question in official_definition.questions}
     question_by_code = {question.code: question for question in official_definition.questions}
     answer_by_question = {row.question_id: row for row in answers}
@@ -335,6 +384,27 @@ def test_http_accepts_all_42_official_answers_for_every_regional(
     assert anonymous[0].response_id not in caplog.text
     assert str(SYNTHETIC_USER_ID) not in response.text
     assert str(SYNTHETIC_USER_ID) not in caplog.text
+
+
+def test_http_rejects_archived_q33_when_a_client_still_submits_it(
+    official_definition, full_submission_http
+):
+    http, session, _catalog = full_submission_http
+    payload = frontend_payload(official_definition, "MG/SPN", "CGE")
+    payload["answers"].append({"question_code": "Q33", "option_codes": ["1"]})
+
+    response = http.post(f"/api/surveys/{official_definition.code}/responses", json=payload)
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "INVALID_ANSWER",
+            "reason": "UNKNOWN_QUESTION",
+        }
+    }
+    assert session.commit_count == 0
+    assert session.rollback_count == 1
+    assert session.added == [] and session.committed == []
 
 
 @pytest.mark.parametrize(
@@ -401,7 +471,7 @@ def test_http_full_official_survey_accepts_work_profile_and_choice_variants(
         q6 = question_by_code["Q06"]
         exclusive = next(option for option in official_definition.options if option.question_id == q6.id and option.is_exclusive)
         by_code["Q06"]["option_codes"] = [exclusive.code]
-    assert len(payload["answers"]) == 42
+    assert len(payload["answers"]) == 41
 
     with caplog.at_level(logging.INFO, logger=submission_service.__name__):
         response = http.post(f"/api/surveys/{official_definition.code}/responses", json=payload)
@@ -410,7 +480,7 @@ def test_http_full_official_survey_accepts_work_profile_and_choice_variants(
     assert response.json() == {"submitted": True}
     assert session.commit_count == 1 and session.rollback_count == 0
     answers = [row for row in session.committed if isinstance(row, ResponseAnswer)]
-    assert len(answers) == 42
+    assert len(answers) == 41
     if variant == "administrative_profile":
         q3 = question_by_code["Q03"]
         assert next(row for row in answers if row.question_id == q3.id).text_value is None
