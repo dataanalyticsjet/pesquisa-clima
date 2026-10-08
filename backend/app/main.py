@@ -1,5 +1,7 @@
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 import secrets
 
 from app.api.auth import router as auth_router
@@ -9,6 +11,7 @@ from app.api.management import router as management_router
 from app.api.organization import router as organization_router
 from app.api.surveys import router as surveys_router
 from app.core.config import settings
+from app.core.security_middleware import ApplicationSecurityMiddleware
 
 
 session_secret = settings.session_secret
@@ -24,6 +27,11 @@ app = FastAPI(
     title=settings.app_name,
     debug=settings.app_debug,
 )
+@app.exception_handler(RequestValidationError)
+async def sanitize_request_validation_error(_request: Request, _error: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": "INVALID_REQUEST"})
+
+
 @app.middleware("http")
 async def redact_oauth_callback_query(request, call_next):
     try:
@@ -41,6 +49,7 @@ app.add_middleware(
     same_site="lax",
     https_only=settings.session_secure or settings.app_env.lower() in {"production", "prod"},
 )
+app.add_middleware(ApplicationSecurityMiddleware, settings=settings)
 
 app.include_router(health_router)
 app.include_router(database_router)

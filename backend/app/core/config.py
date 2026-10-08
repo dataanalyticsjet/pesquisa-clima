@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Pesquisa de Clima"
     app_env: str = "development"
-    app_debug: bool = True
+    app_debug: bool = False
 
     api_host: str = "127.0.0.1"
     api_port: int = 8002
@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_mail_transport(self) -> "Settings":
         self.app_env = self.app_env.strip().lower()
+        if self.app_env in {"production", "prod"} and self.app_debug:
+            raise ValueError("APP_DEBUG must be disabled in production.")
         if self.smtp_ssl and self.smtp_starttls:
             raise ValueError("SMTP_SSL and SMTP_STARTTLS cannot both be enabled.")
         return self

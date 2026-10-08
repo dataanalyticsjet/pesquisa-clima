@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_db_session, require_management_access
+from app.api.params import SurveyCodePath
 from app.models.identity import User
 from app.schemas.management import (
     ManagementSurveyAttentionResponse,
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/api/management/surveys", tags=["management"])
     response_model=ManagementSurveyVoiceResponse,
 )
 def read_survey_voice(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     _user: User = Depends(require_management_access),
     session: Session = Depends(get_db_session),
 ):
@@ -41,7 +42,7 @@ def read_survey_voice(
     response_model=ManagementSurveyAttentionResponse,
 )
 def read_survey_attention(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     _user: User = Depends(require_management_access),
     session: Session = Depends(get_db_session),
 ):
@@ -56,7 +57,7 @@ def read_survey_attention(
     response_model=ManagementSurveyOverviewResponse,
 )
 def read_survey_overview(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     _user: User = Depends(require_management_access),
     session: Session = Depends(get_db_session),
 ):
@@ -71,7 +72,7 @@ def read_survey_overview(
     response_model=ManagementSurveyPillarsResponse,
 )
 def read_survey_pillars(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     _user: User = Depends(require_management_access),
     session: Session = Depends(get_db_session),
 ):

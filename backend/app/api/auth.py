@@ -89,12 +89,17 @@ def feishu_callback(request: Request, code: str | None = None, state: str | None
 
     expected_state = request.session.pop(STATE_SESSION_KEY, None)
     issued_at = request.session.pop(STATE_ISSUED_SESSION_KEY, None)
-    if not isinstance(state, str) or not isinstance(expected_state, str) or not secrets.compare_digest(state, expected_state):
+    if (
+        not isinstance(state, str)
+        or len(state) > 256
+        or not isinstance(expected_state, str)
+        or not secrets.compare_digest(state, expected_state)
+    ):
         return _frontend_redirect(auth_error="invalid_state")
     current_time = int(time.time())
     if not isinstance(issued_at, int) or current_time - issued_at > STATE_TTL_SECONDS or issued_at > current_time:
         return _frontend_redirect(auth_error="expired_state")
-    if not isinstance(code, str) or not code.strip():
+    if not isinstance(code, str) or not code.strip() or len(code) > 4096:
         return _frontend_redirect(auth_error="missing_code")
 
     oauth_client = FeishuOAuthClient(
@@ -157,9 +162,9 @@ def verify_external_code(
         errors = {
             "invalid_email": (422, "INVALID_EMAIL"),
             "invalid_code": (400, "INVALID_CODE"),
-            "expired_code": (400, "CODE_EXPIRED"),
-            "user_inactive": (403, "ACCESS_UNAVAILABLE"),
-            "identity_conflict": (409, "IDENTITY_CONFLICT"),
+            "expired_code": (400, "INVALID_CODE"),
+            "user_inactive": (400, "INVALID_CODE"),
+            "identity_conflict": (400, "INVALID_CODE"),
             "external_auth_unavailable": (503, "EXTERNAL_AUTH_UNAVAILABLE"),
         }
         status_code, detail = errors.get(error.code, (400, "INVALID_CODE"))

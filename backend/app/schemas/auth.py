@@ -30,7 +30,7 @@ class ExternalCodeRequest(BaseModel):
 
 
 class ExternalCodeVerifyRequest(ExternalCodeRequest):
-    code: str = Field(pattern=r"^[0-9]{6}$")
+    code: str = Field(min_length=6, max_length=6, pattern=r"^[0-9]{6}$")
 
 
 class ExternalCodeRequestResponse(BaseModel):

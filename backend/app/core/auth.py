@@ -32,6 +32,16 @@ def get_current_user(
     return user
 
 
+def require_admin_access(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_db_session)],
+) -> User:
+    roles = identity_repository.get_user_roles(session, user.id)
+    if "ADMIN" not in roles:
+        raise HTTPException(status_code=403, detail="ADMIN_ACCESS_REQUIRED")
+    return user
+
+
 def require_management_access(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_db_session)],

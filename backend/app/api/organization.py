@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.auth import get_current_user
+from app.api.params import RegionalCodePath
 from app.models.identity import User
 from app.schemas.organization import (
     OrganizationRegionalsResponse,
@@ -26,7 +27,7 @@ def read_regionals(_user: User = Depends(get_current_user)):
     "/regionals/{regional_code:path}/scs",
     response_model=OrganizationServiceCentersResponse,
 )
-def read_service_centers(regional_code: str, _user: User = Depends(get_current_user)):
+def read_service_centers(regional_code: RegionalCodePath, _user: User = Depends(get_current_user)):
     service_centers = organization_catalog_service.get_service_centers(regional_code)
     if service_centers is None:
         raise HTTPException(status_code=404, detail="REGIONAL_NOT_FOUND")

@@ -4,6 +4,7 @@ from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_db_session
+from app.api.params import SurveyCodePath
 from app.models.identity import User
 from app.schemas.participation import ParticipationStatusResponse
 from app.schemas.responses import SurveySubmissionRequest, SurveySubmissionResponse
@@ -39,7 +40,7 @@ router = APIRouter(prefix="/api/surveys", tags=["surveys"], route_class=SurveySu
 
 
 @router.get("/{survey_code}", response_model=SurveyDefinitionResponse)
-def read_survey(survey_code: str):
+def read_survey(survey_code: SurveyCodePath):
     try:
         survey = get_survey_definition(survey_code, require_active=False)
     except SurveyNotActiveError:
@@ -59,7 +60,7 @@ def read_survey(survey_code: str):
     response_model_exclude_none=True,
 )
 def read_participation(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     user: User = Depends(get_current_user),
     session: Session = Depends(get_db_session),
 ):
@@ -75,7 +76,7 @@ def read_participation(
     status_code=201,
 )
 def submit_survey_responses(
-    survey_code: str,
+    survey_code: SurveyCodePath,
     body: SurveySubmissionRequest,
     user: User = Depends(get_current_user),
     session: Session = Depends(get_db_session),

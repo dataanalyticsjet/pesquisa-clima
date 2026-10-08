@@ -365,6 +365,23 @@ def test_request_endpoint_never_reveals_internal_email(monkeypatch):
     assert response.json() == {"message": external_auth_service.GENERIC_REQUEST_MESSAGE}
 
 
+def test_verify_errors_do_not_disclose_code_or_account_state(monkeypatch):
+    from app.core.auth import get_db_session
+    client.app.dependency_overrides[get_db_session] = lambda: FakeSession()
+    codes = ("invalid_code", "expired_code", "user_inactive", "identity_conflict")
+    for error_code in codes:
+        def raise_error(session, email, code, code_value=error_code):
+            raise external_auth_service.ExternalAuthError(code_value)
+        monkeypatch.setattr(auth_api, "verify_external_login_code", raise_error)
+        response = client.post(
+            "/api/auth/external/verify-code",
+            json={"email": "person@example.com", "code": "123456"},
+        )
+        assert response.status_code == 400
+        assert response.json() == {"detail": "INVALID_CODE"}
+        assert "person@example.com" not in response.text
+
+
 def test_verify_endpoint_creates_same_local_session_cookie(monkeypatch):
     current = user()
     monkeypatch.setattr(auth_api, "verify_external_login_code", lambda session, email, code: current)

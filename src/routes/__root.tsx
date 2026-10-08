@@ -16,6 +16,10 @@ export const Route = createRootRoute({
       {
         title: "Pesquisa de Clima",
       },
+      {
+        name: "privacy-ui-deterrents",
+        content: "enabled",
+      },
     ],
     links: [
       {
