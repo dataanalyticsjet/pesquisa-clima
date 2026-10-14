@@ -139,6 +139,48 @@ def test_service_orders_definition_and_filters_organizational_options(monkeypatc
     assert [option["position"] for option in second_questions["Q39"]["options"]] == list(range(1, 12))
 
 
+def test_service_keeps_stable_codes_when_visual_numbers_and_sections_change(monkeypatch, read_data):
+    leadership = Row(id=4, survey_id=7, code="LIDERANCA", title="Liderança", position=4, analysis_type="SCORE")
+    environment = Row(id=5, survey_id=7, code="AMBIENTE", title="Ambiente", position=5, analysis_type="SCORE")
+    ethics = Row(id=6, survey_id=7, code="ETICA", title="Ética", position=6, analysis_type="SCORE")
+    q24 = make_question(16, 4, question_type="LIKERT")
+    q24.id = 24
+    q24.code = "Q24"
+    q24.text = "Percebo que minha liderança atua de forma ética e coerente com as regras da empresa."
+    q24.position = 6
+    q24.analysis_role = "SCORE"
+
+    q16 = make_question(17, 5, question_type="LIKERT")
+    q16.id, q16.code, q16.position, q16.analysis_role = 16, "Q16", 1, "SCORE"
+    q21 = make_question(22, 6, question_type="LIKERT")
+    q21.id, q21.code, q21.position, q21.analysis_role = 21, "Q21", 1, "SCORE"
+    q22 = make_question(23, 6, question_type="LIKERT")
+    q22.id, q22.code, q22.position, q22.analysis_role = 22, "Q22", 2, "SCORE"
+    q23 = make_question(24, 6, question_type="LIKERT")
+    q23.id = 23
+    q23.code = "Q23"
+    q23.text = "Sinto segurança para realizar um relato ou denúncia sem medo de sofrer retaliação ou consequências negativas."
+    q23.position = 3
+    q23.analysis_role = "SCORE"
+    read_data.sections.extend([leadership, environment, ethics])
+    read_data.questions.extend([q24, q16, q21, q22, q23])
+    monkeypatch.setattr(survey_service, "get_survey_by_code", lambda code: read_data)
+
+    result = survey_service.get_survey_definition("CLIMATE_2026")
+    by_section = {section["code"]: section for section in result["sections"]}
+
+    assert [
+        (question["code"], question["question_number"])
+        for question in by_section["LIDERANCA"]["questions"]
+    ] == [("Q24", 16)]
+    assert [
+        (question["code"], question["question_number"])
+        for question in by_section["AMBIENTE"]["questions"]
+    ] == [("Q16", 17)]
+    assert [(question["code"], question["question_number"]) for question in by_section["ETICA"]["questions"]] == [
+        ("Q21", 22), ("Q22", 23), ("Q23", 24)
+    ]
+
 def test_service_returns_none_for_unknown_survey(monkeypatch):
     monkeypatch.setattr(survey_service, "get_survey_by_code", lambda code: None)
 

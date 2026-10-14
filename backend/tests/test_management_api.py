@@ -288,9 +288,9 @@ def test_repository_nps_query_finds_official_question_by_q39_code():
 OFFICIAL_PILLARS = [
     ("CONDICOES", "Condições e Organização do Trabalho", 1, 2),
     ("JORNADA", "Jornada de Trabalho", 2, 1),
-    ("LIDERANCA", "Liderança e Comunicação", 3, 5),
+    ("LIDERANCA", "Liderança e Comunicação", 3, 6),
     ("AMBIENTE", "Ambiente, Respeito e Segurança", 4, 5),
-    ("ETICA", "Ética e Compliance", 5, 4),
+    ("ETICA", "Ética e Compliance", 5, 3),
     ("DESENVOLVIMENTO", "Reconhecimento e Desenvolvimento", 6, 2),
     ("REMUNERACAO", "Remuneração e Benefícios", 7, 2),
     ("SAUDE", "Saúde, Bem-estar e Equilíbrio", 8, 3),

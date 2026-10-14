@@ -237,10 +237,58 @@ def test_official_seed_fixture_retains_real_question_and_option_contract(officia
     assert official_definition.section_count == 13
     assert len(questions) == 41
     assert [question.question_number for question in questions] == list(range(1, 42))
-    expected_codes = [f"Q{number:02d}" for number in range(1, 33)] + [
-        f"Q{number:02d}" for number in range(34, 43)
-    ]
+    expected_codes = (
+        [f"Q{number:02d}" for number in range(1, 16)]
+        + ["Q24"]
+        + [f"Q{number:02d}" for number in range(16, 24)]
+        + [f"Q{number:02d}" for number in range(25, 33)]
+        + [f"Q{number:02d}" for number in range(34, 43)]
+    )
     assert [question.code for question in questions] == expected_codes
+    assert len({question.code for question in questions}) == 41
+    assert len({question.question_number for question in questions}) == 41
+    assert [question.question_number for question in questions] == list(range(1, 42))
+
+    expected_display_numbers = {
+        **{f"Q{number:02d}": number for number in range(1, 16)},
+        "Q24": 16,
+        **{f"Q{number:02d}": number + 1 for number in range(16, 24)},
+        **{f"Q{number:02d}": number for number in range(25, 33)},
+        **{f"Q{number:02d}": number - 1 for number in range(34, 43)},
+    }
+    assert {question.code: question.question_number for question in questions} == expected_display_numbers
+    assert by_code["Q07"].text == "Consigo realizar minhas atividades dentro da minha jornada normal de trabalho."
+    assert by_code["Q08"].text == "Nos últimos meses, com que frequência você trabalhou além de sua carga horária regular?"
+    assert by_code["Q09"].text == "Quando você trabalha além do seu horário regular, na sua visão, qual costuma ser o principal motivo?"
+    assert by_code["Q13"].text == "Minha liderança compartilha decisões e temas que afetam minhas atividades?"
+    assert by_code["Q30"].text == "As pessoas são encorajadas a equilibrar sua vida profissional e pessoal."
+    assert by_code["Q08"].question_type == by_code["Q09"].question_type == "SINGLE_CHOICE"
+    options_by_code = lambda code: [option.label for option in sorted(
+        (option for option in official_definition.options if option.question_id == by_code[code].id),
+        key=lambda option: option.position,
+    )]
+    assert options_by_code("Q08") == ["Nunca", "Raramente", "Algumas vezes no mês", "Algumas vezes na semana", "Quase todos os dias"]
+    assert options_by_code("Q09") == [
+        "Volume elevado de trabalho", "Falta de pessoas na equipe",
+        "Prazos ou metas difíceis de cumprir dentro da jornada",
+        "Problemas em sistemas, ferramentas ou equipamentos", "Falta de organização ou planejamento",
+        "Dependência de outras áreas ou processos", "Solicitações ou demandas da liderança",
+        "Necessidade da operação", "Retrabalho ou falhas nos processos", "Outro motivo",
+        "Minha jornada normalmente não se estende",
+    ]
+    assert (by_code["Q24"].question_number, by_code["Q24"].section_code, by_code["Q24"].position) == (16, "LIDERANCA", 6)
+    assert by_code["Q24"].text == "Percebo que minha liderança atua de forma ética e coerente com as regras da empresa."
+    assert by_code["Q24"].analysis_role == "SCORE" and by_code["Q24"].question_type == "LIKERT"
+    assert {
+        code: (by_code[code].question_number, by_code[code].section_code, by_code[code].position)
+        for code in ("Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22", "Q23")
+    } == {
+        "Q16": (17, "AMBIENTE", 1), "Q17": (18, "AMBIENTE", 2),
+        "Q18": (19, "AMBIENTE", 3), "Q19": (20, "AMBIENTE", 4),
+        "Q20": (21, "AMBIENTE", 5), "Q21": (22, "ETICA", 1),
+        "Q22": (23, "ETICA", 2), "Q23": (24, "ETICA", 3),
+    }
+    assert by_code["Q23"].text == "Sinto segurança para realizar um relato ou denúncia sem medo de sofrer retaliação ou consequências negativas."
     assert "Q33" not in by_code
     assert sum("sanitários" in question.text.lower() for question in questions) == 1
     assert by_code["Q32"].text == (
@@ -287,9 +335,18 @@ def test_frontend_sources_and_chinese_translation_match_the_41_active_codes(offi
     mock_questions = re.findall(r'\{ id: "q(\d+)", number: (\d+),', mock_source)
     assert len(mock_questions) == 41
     assert [int(number) for _code, number in mock_questions] == list(range(1, 42))
-    assert [int(code) for code, _number in mock_questions] == [
-        *range(1, 33), *range(34, 43)
+    expected_visual_codes = [
+        *range(1, 16), 24, *range(16, 24), *range(25, 33), *range(34, 43)
     ]
+    assert [int(code) for code, _number in mock_questions] == expected_visual_codes
+    assert {int(code): int(number) for code, number in mock_questions} == dict(
+        zip(expected_visual_codes, range(1, 42))
+    )
+    assert re.search(r'id: "q24", number: 16, sectionId: "lideranca"', mock_source)
+    management_source = (PROJECT_ROOT / "src" / "data" / "mockManagement.ts").read_text(encoding="utf-8")
+    assert 'questionNumbers: [11, 12, 13, 14, 15, 16]' in management_source
+    assert 'questionNumbers: [17, 18, 19, 20, 21]' in management_source
+    assert 'questionNumbers: [22, 23, 24]' in management_source
     assert (
         'id: "q32", number: 32, sectionId: "condicoes-ambiente", type: "likert", '
         'text: "Os sanitários da unidade são mantidos em condições de higiene, '
@@ -305,9 +362,45 @@ def test_frontend_sources_and_chinese_translation_match_the_41_active_codes(offi
     assert question_map is not None
     translated_codes = re.findall(r"^\s*Q(\d{2}):", question_map.group("body"), re.MULTILINE)
     active_codes = [question.code.removeprefix("Q") for question in official_definition.questions]
-    assert translated_codes == active_codes
+    assert len(translated_codes) == len(set(translated_codes)) == 41
+    assert set(translated_codes) == set(active_codes)
     assert 'Q32: { text: "本单位的卫生间保持卫生、设施完好且运行正常吗？" }' in question_map.group("body")
     assert not re.search(r"^\s*Q33:", question_map.group("body"), re.MULTILINE)
+    assert 'Q07: { text: "我能够在正常工作时间内完成自己的工作。" }' in question_map.group("body")
+    assert 'Q08: { text: "最近几个月，您有多频繁地超出规定工作时间工作？"' in question_map.group("body")
+    assert 'Q09: { text: "当您超出正常工作时间工作时，您认为通常的主要原因是什么？"' in question_map.group("body")
+    assert 'Q13: { text: "我的领导会分享影响我工作的决定和事项吗？" }' in question_map.group("body")
+    assert 'Q24: { text: "我认为我的领导行事合乎道德，并遵守公司的规定。" }' in question_map.group("body")
+    assert 'Q23: { text: "我可以放心举报，不必担心遭到报复或受到负面影响。" }' in question_map.group("body")
+    assert 'Q30: { text: "大家会受到鼓励，在工作与个人生活之间保持平衡。" }' in question_map.group("body")
+    q08_translation = re.search(r"Q08:.*?options: \{(?P<options>[^}]+)\}", question_map.group("body"))
+    assert q08_translation is not None
+    assert re.findall(r'OPT_\d{2}: "([^"]+)"', q08_translation.group("options")) == [
+        "从不", "很少", "每月几次", "每周几次", "几乎每天"
+    ]
+    q09_translation = re.search(r"Q09:.*?options: \{(?P<options>.*?)\n  \} \},", question_map.group("body"), re.DOTALL)
+    assert q09_translation is not None
+    assert re.findall(r'OPT_\d{2}: "([^"]+)"', q09_translation.group("options")) == [
+        "工作量过大", "团队人手不足", "期限或目标难以在正常工作时间内完成",
+        "系统、工具或设备出现问题", "组织或计划不足", "依赖其他部门或流程",
+        "领导提出的要求或任务", "运营需要", "流程返工或错误", "其他原因",
+        "我的工作时间通常不会延长",
+    ]
+
+
+def test_manual_revision_sql_is_guarded_and_preserves_historical_answers():
+    manual_sql = (PROJECT_ROOT / "backend" / "sql" / "manual" / "revise_climate_2026_question_order_and_texts.sql").read_text(encoding="utf-8")
+    executable_sql = "\n".join(line for line in manual_sql.splitlines() if not line.lstrip().startswith("--"))
+    assert "START TRANSACTION;" in executable_sql
+    assert not re.search(r"(?im)^\s*COMMIT\s*;", executable_sql)
+    assert "@preflight_ok = 1" in executable_sql
+    assert "@approve_historical_prompt_reclassification = 0" in executable_sql
+    assert "@shifted_rows = 9" in executable_sql
+    assert "question_number = question_number + 1000" in executable_sql
+    assert "@source_answer_count = @final_answer_count" in executable_sql
+    assert not re.search(r"\bDELETE\s+FROM\s+(survey_questions|response_answers)", executable_sql, re.IGNORECASE)
+    assert not re.search(r"\bUPDATE\s+response_answers\b", executable_sql, re.IGNORECASE)
+    assert "Q03" in executable_sql and "Q32" in executable_sql and "Q33" in executable_sql
 
 
 @pytest.mark.parametrize("regional,sc", REGIONAL_SC_CASES, ids=[regional for regional, _ in REGIONAL_SC_CASES])
