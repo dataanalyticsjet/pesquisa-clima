@@ -22,7 +22,7 @@ def test_catalog_requires_authenticated_user():
     assert response.status_code == 401
 
 
-def test_authenticated_catalog_returns_nine_regionals_and_twenty_seven_scs():
+def test_authenticated_catalog_returns_nine_regionals_and_twenty_nine_scs():
     app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
     regionals = client.get("/api/organization/regionals")
     assert regionals.status_code == 200
@@ -36,13 +36,14 @@ def test_authenticated_catalog_returns_nine_regionals_and_twenty_seven_scs():
         response = client.get(f"/api/organization/regionals/{item['code']}/scs")
         assert response.status_code == 200
         total += len(response.json()["service_centers"])
-    assert total == 27
+    assert total == 29
 
 
 def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
     app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
     expected = {
         "BA": ["AJU", "FEC", "VDC"],
+        "CE": ["FOR", "JGS", "SLZ", "SNS", "THE"],
         "SPE": ["GRU"],
         "SPS": ["BRE"],
         "MATRIZ": ["MATRIZ"],
@@ -62,3 +63,32 @@ def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
     invalid = client.get("/api/organization/regionals/INVALID/scs")
     assert invalid.status_code == 404
     assert invalid.json() == {"detail": "REGIONAL_NOT_FOUND"}
+
+
+def test_slz_and_sns_are_official_ce_units_without_duplicate_codes():
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
+    all_codes = []
+
+    for regional in client.get("/api/organization/regionals").json()["regionals"]:
+        response = client.get(f"/api/organization/regionals/{regional['code']}/scs")
+        assert response.status_code == 200
+        units = response.json()["service_centers"]
+        codes = [unit["code"] for unit in units]
+        all_codes.extend(codes)
+        if regional["code"] == "CE":
+            by_code = {unit["code"]: unit for unit in units}
+            assert by_code["SLZ"] == {
+                "code": "SLZ",
+                "name": "MA - Distrito Industrial",
+                "display_name": "SLZ — MA - Distrito Industrial",
+            }
+            assert by_code["SNS"] == {
+                "code": "SNS",
+                "name": "PE - Nossa Senhora Aparecida",
+                "display_name": "SNS — PE - Nossa Senhora Aparecida",
+            }
+        else:
+            assert "SLZ" not in codes
+            assert "SNS" not in codes
+
+    assert len(all_codes) == len(set(all_codes))

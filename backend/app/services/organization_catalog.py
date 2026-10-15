@@ -39,6 +39,8 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
         (
             ServiceCenter("FOR", "CE - FORTALEZA"),
             ServiceCenter("JGS", "PE - JABOATÃO DOS GUARARAPES"),
+            ServiceCenter("SLZ", "MA - Distrito Industrial"),
+            ServiceCenter("SNS", "PE - Nossa Senhora Aparecida"),
             ServiceCenter("THE", "PI - TERESINA"),
         ),
     ),

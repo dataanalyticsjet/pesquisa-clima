@@ -92,11 +92,11 @@ def find_sc(regional, code):
     return next(item for item in regional["scs"] if item["sc_code"] == code)
 
 
-def test_catalog_contains_all_nine_regionals_and_27_service_centers():
+def test_catalog_contains_all_nine_regionals_and_29_service_centers():
     assert [entry.code for entry in REGIONAL_SC_CATALOG] == [
         "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
     ]
-    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 27
+    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 29
     matriz = REGIONAL_SC_CATALOG[0]
     assert matriz.display_name == "Matriz"
     assert [(sc.code, sc.display_name) for sc in matriz.service_centers] == [
@@ -109,7 +109,7 @@ def test_catalog_contains_all_nine_regionals_and_27_service_centers():
     [
         ("MATRIZ", ["MATRIZ"]),
         ("BA", ["AJU", "FEC", "VDC"]),
-        ("CE", ["FOR", "JGS", "THE"]),
+        ("CE", ["FOR", "JGS", "SLZ", "SNS", "THE"]),
         ("GP", ["ANA", "BSB", "CGB", "CGR", "GYN", "MRB", "PMW", "PVH", "STM"]),
         ("MG/SPN", ["CGE", "CVH", "RAO", "RBP"]),
         ("PR", ["BNU", "NSR", "SJS"]),
@@ -207,7 +207,7 @@ def test_every_catalog_group_and_eligible_question_is_returned_with_zero_counts(
     payload = configure_service(monkeypatch)
 
     assert len(payload["regionals"]) == 9
-    assert sum(len(region["scs"]) for region in payload["regionals"]) == 27
+    assert sum(len(region["scs"]) for region in payload["regionals"]) == 29
     assert payload["regionals"][0]["regional_code"] == "MATRIZ"
     assert payload["regionals"][0]["scs"][0]["sc_code"] == "MATRIZ"
     for regional in payload["regionals"]:
@@ -318,7 +318,7 @@ def test_groups_with_data_are_sorted_by_attention_rate_and_no_group_is_dropped(m
     assert [item["regional_code"] for item in payload["regionals"][:2]] == ["CE", "BA"]
     assert payload["regionals"][2]["regional_code"] == "GP"
     assert len(payload["regionals"]) == 9
-    assert sum(len(item["scs"]) for item in payload["regionals"]) == 27
+    assert sum(len(item["scs"]) for item in payload["regionals"]) == 29
 
 
 def test_question_suppressed_by_minimum_remains_in_the_response(monkeypatch):
@@ -482,3 +482,40 @@ def test_catalog_entry_is_shared_with_submission_validation():
     assert catalog.validate_selection("ORG_BASE", "GRU", regional_code="BA") is False
     assert catalog.validate_selection("ORG_BASE", "GRU", regional_code="SPE") is True
     assert catalog.validate_selection("ORG_BASE", "BRE", regional_code="SPS") is True
+    assert catalog.validate_selection("ORG_BASE", "SLZ", regional_code="CE") is True
+    assert catalog.validate_selection("ORG_BASE", "SNS", regional_code="CE") is True
+    assert catalog.validate_selection("ORG_BASE", "SLZ", regional_code="BA") is False
+    assert catalog.validate_selection("ORG_BASE", "SNS", regional_code="GP") is False
+
+
+def test_ce_attention_groups_include_slz_and_sns_with_existing_suppression(monkeypatch):
+    payload = configure_service(
+        monkeypatch,
+        group_counts=[("REGIONAL", "CE", 5), ("BASE", "SLZ", 5), ("BASE", "SNS", 4)],
+        score_counts=[
+            ("REGIONAL", "CE", 44, "Q4", "Pergunta elegível 4", 4, 1, 1),
+            ("REGIONAL", "CE", 44, "Q4", "Pergunta elegível 4", 4, 5, 4),
+            ("BASE", "SLZ", 44, "Q4", "Pergunta elegível 4", 4, 2, 5),
+            ("BASE", "SNS", 44, "Q4", "Pergunta elegível 4", 4, 1, 4),
+        ],
+        question_counts=[
+            ("REGIONAL", "CE", 44, 5),
+            ("BASE", "SLZ", 44, 5),
+            ("BASE", "SNS", 44, 4),
+        ],
+    )
+
+    ce = find_regional(payload, "CE")
+    slz = find_sc(ce, "SLZ")
+    sns = find_sc(ce, "SNS")
+
+    assert ce["respondent_count"] == 5
+    assert ce["analytics_available"] is True
+    assert ce["attention_rate"] == 20.0
+    assert slz["display_name"] == "SLZ — MA - Distrito Industrial"
+    assert slz["respondent_count"] == 5
+    assert slz["attention_rate"] == 100.0
+    assert sns["display_name"] == "SNS — PE - Nossa Senhora Aparecida"
+    assert sns["respondent_count"] is None
+    assert sns["analytics_available"] is False
+    assert sns["attention_rate"] is None

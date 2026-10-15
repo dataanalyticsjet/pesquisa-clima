@@ -277,6 +277,56 @@ def test_validated_org_codes_are_text_values_and_segments_are_anonymous(monkeypa
     ]
 
 
+@pytest.mark.parametrize("base_code", ["SLZ", "SNS"])
+def test_ce_submission_accepts_official_service_centers_and_keeps_segments_anonymous(
+    monkeypatch, base_code
+):
+    session, _, _ = configure_service(monkeypatch)
+    answers = valid_answers()
+    answers[0] = {"question_code": "Q01", "option_codes": ["CE"]}
+    answers[1] = {"question_code": "Q02", "option_codes": [base_code]}
+
+    result = submission_service.submit_survey(
+        session,
+        "CLIMATE_2026",
+        801,
+        submission(answers),
+        organization_catalog=OrganizationCatalogService(),
+    )
+
+    assert result == {"submitted": True}
+    assert session.commit_count == 1 and session.rollback_count == 0
+    segments = {
+        row.segment_type: row.segment_code
+        for row in session.committed
+        if isinstance(row, AnonymousResponseSegment)
+    }
+    assert segments == {"REGIONAL": "CE", "BASE": base_code}
+    anonymous = next(row for row in session.committed if isinstance(row, AnonymousResponse))
+    assert not hasattr(anonymous, "user_id") and not hasattr(anonymous, "participation_id")
+
+
+@pytest.mark.parametrize(("regional_code", "base_code"), [("BA", "SLZ"), ("GP", "SNS")])
+def test_ce_units_are_rejected_with_other_regionals(monkeypatch, regional_code, base_code):
+    session, _, _ = configure_service(monkeypatch)
+    answers = valid_answers()
+    answers[0] = {"question_code": "Q01", "option_codes": [regional_code]}
+    answers[1] = {"question_code": "Q02", "option_codes": [base_code]}
+
+    with pytest.raises(SurveySubmissionError) as error:
+        submission_service.submit_survey(
+            session,
+            "CLIMATE_2026",
+            801,
+            submission(answers),
+            organization_catalog=OrganizationCatalogService(),
+        )
+
+    assert error.value.code == "INVALID_OPTION"
+    assert error.value.reason == "SC_NOT_IN_REGIONAL"
+    assert session.added == [] and session.rollback_count == 1
+
+
 
 @pytest.mark.parametrize("profile", ["OPERATIONAL", "ADMINISTRATIVE"])
 def test_q3_accepts_each_official_work_profile(monkeypatch, profile):
