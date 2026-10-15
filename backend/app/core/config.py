@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Pesquisa de Clima"
+    app_name: str = "Pesquisa de Engajamento - Voz do Colaborador"
     app_env: str = "development"
     app_debug: bool = False
 

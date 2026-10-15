@@ -53,9 +53,9 @@ export function AppHeader() {
   return (
     <header className="app-header">
       <div className="app-header__inner">
-        <Link className="app-header__home" to="/" aria-label={t("home.open")}>
+        <Link className="app-header__home" to="/" aria-label={t("home.open", { product: t("brand.name") })}>
           <img className="app-header__logo" src="/jt-express-logo.png" alt="J&T Express" />
-          <span className="app-header__title">Pesquisa de Clima</span>
+          <span className="app-header__title">{t("brand.name")}</span>
         </Link>
         <div className="app-header__actions">
           <LanguageSelector />

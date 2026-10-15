@@ -1,6 +1,7 @@
 import { AppShell } from "../components/layout/AppShell";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+import { pt } from "../i18n/catalog";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -14,7 +15,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "Pesquisa de Clima",
+        title: pt["brand.name"],
       },
       {
         name: "privacy-ui-deterrents",

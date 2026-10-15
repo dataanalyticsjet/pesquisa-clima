@@ -103,7 +103,7 @@ function LoginPage() {
           <h1 className="login-card__title" id="login-title">
             {t(emailLoginStep === "initial" ? "login.title" : emailLoginStep === "email" ? "login.emailStepTitle" : "login.codeStepTitle")}
           </h1>
-          <p className="login-card__product">{t("login.product")}</p>
+          <p className="login-card__product">{t("brand.name")}</p>
           {emailLoginStep === "initial" ? (
             <>
               <p className="login-card__description">{t("login.description")}</p>

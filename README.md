@@ -1,4 +1,4 @@
-# Pesquisa de Clima
+# Pesquisa de Engajamento - Voz do Colaborador
 
 Plataforma corporativa para realização e acompanhamento de pesquisas de clima e ambiente organizacional.
 

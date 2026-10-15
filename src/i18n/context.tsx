@@ -7,6 +7,10 @@ type I18nValue = { locale: Locale; setLocale: (locale: Locale) => void; t: (key:
 const localeStorageKey = "pesquisaclima:locale";
 const I18nContext = createContext<I18nValue | null>(null);
 
+function productName(locale: Locale) {
+  return locale === "zh" ? zh["brand.name"] ?? pt["brand.name"] : pt["brand.name"];
+}
+
 function readSavedLocale(): Locale {
   try {
     return window.localStorage.getItem(localeStorageKey) === "zh" ? "zh" : "pt";
@@ -22,13 +26,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const savedLocale = readSavedLocale();
     setLocaleState(savedLocale);
     document.documentElement.lang = savedLocale === "zh" ? "zh-CN" : "pt-BR";
-    document.title = "Pesquisa de Clima";
+    document.title = productName(savedLocale);
     const syncLocale = (event: StorageEvent) => {
       if (event.key === localeStorageKey) {
         const nextLocale = event.newValue === "zh" ? "zh" : "pt";
         setLocaleState(nextLocale);
         document.documentElement.lang = nextLocale === "zh" ? "zh-CN" : "pt-BR";
-        document.title = "Pesquisa de Clima";
+        document.title = productName(nextLocale);
       }
     };
     window.addEventListener("storage", syncLocale);
@@ -38,7 +42,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
     document.documentElement.lang = nextLocale === "zh" ? "zh-CN" : "pt-BR";
-    document.title = "Pesquisa de Clima";
+    document.title = productName(nextLocale);
     try {
       window.localStorage.setItem(localeStorageKey, nextLocale);
     } catch {

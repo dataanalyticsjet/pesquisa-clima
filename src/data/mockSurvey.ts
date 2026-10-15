@@ -130,7 +130,7 @@ const questions: SurveyQuestion[] = [
 
 export const mockSurvey: SurveyDefinition = {
   id: "clima-2026",
-  title: "Pesquisa de Clima Organizacional 2026",
+  title: "Pesquisa de Engajamento - Voz do Colaborador",
   status: "ACTIVE",
   description: "Queremos ouvir você e conhecer sua experiência na J&T Express.",
   introduction: [

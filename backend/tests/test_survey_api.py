@@ -50,7 +50,7 @@ def read_data():
     survey = Row(
         id=7,
         code="CLIMATE_2026",
-        title="Pesquisa de Clima Organizacional 2026",
+        title="Pesquisa de Engajamento - Voz do Colaborador",
         intro_text="Introdução",
         completion_text="Obrigada por participar!",
         status="DRAFT",
@@ -87,7 +87,7 @@ def read_data():
 def test_get_survey_returns_definition_and_allows_draft(monkeypatch):
     expected = {
         "code": "CLIMATE_2026",
-        "title": "Pesquisa de Clima Organizacional 2026",
+        "title": "Pesquisa de Engajamento - Voz do Colaborador",
         "intro_text": "Introdução",
         "completion_text": "Obrigada por participar!",
         "status": "DRAFT",

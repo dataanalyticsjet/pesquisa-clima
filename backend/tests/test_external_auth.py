@@ -424,6 +424,9 @@ def test_email_service_smtp_is_mocked_and_never_sends_real_mail(monkeypatch):
         EmailService().send_login_code("user@example.com", "123456", 10)
     smtp_class.assert_called_once()
     smtp.send_message.assert_called_once()
+    sent_message = smtp.send_message.call_args.args[0]
+    assert sent_message["Subject"] == "Pesquisa de Engajamento - Voz do Colaborador — Código de acesso"
+    assert "Pesquisa de Engajamento - Voz do Colaborador" in sent_message.get_content()
 
 
 def test_smtp_delivery_failure_has_generic_error_and_no_sensitive_log(monkeypatch, caplog):

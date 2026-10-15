@@ -16,11 +16,11 @@ class EmailUnavailableError(RuntimeError):
 class EmailService:
     def send_login_code(self, recipient: str, code: str, ttl_minutes: int) -> None:
         message = EmailMessage()
-        message["Subject"] = "Pesquisa de Clima — Código de acesso"
+        message["Subject"] = "Pesquisa de Engajamento - Voz do Colaborador — Código de acesso"
         message["From"] = settings.smtp_from
         message["To"] = recipient
         message.set_content(
-            "Pesquisa de Clima\n\n"
+            "Pesquisa de Engajamento - Voz do Colaborador\n\n"
             f"Seu código de acesso é: {code}\n\n"
             f"O código expira em {ttl_minutes} minutos e pode ser usado uma única vez.\n\n"
             "Se você não solicitou este acesso, ignore esta mensagem."

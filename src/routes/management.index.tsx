@@ -85,7 +85,7 @@ function ManagementOverview() {
         eyebrow="management.eyebrow"
         statusBadge={status?.label}
         statusTone={status?.tone}
-        title={t("management.surveyTitle")}
+        title={t("brand.name")}
         description={t("management.overviewDescription")}
       />
       {loading && (

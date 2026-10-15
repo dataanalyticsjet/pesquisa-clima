@@ -20,7 +20,7 @@ export const translatedSections: Record<string, string> = {
   SUA_VOZ: "员工之声",
 };
 
-export const translatedSurveyTitle = "2026年员工氛围调查";
+export const translatedSurveyTitle = "员工敬业度调查 - 员工心声";
 const likertOptions: Record<string, string> = {
   "1": "完全不同意",
   "2": "不同意",

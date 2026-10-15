@@ -2,7 +2,7 @@
 -- Source of section/question text, helper text, placeholders, required flags, types, NPS labels, and static choices: src/data/mockSurvey.ts.
 -- No USE, CREATE DATABASE, demo regional/base options, or application startup execution.
 -- Existing databases must use backend/sql/manual/unify_climate_2026_questions_32_33.sql; this seed does not archive historical Q33 rows.
--- Existing CLIMATE_2026 databases must use backend/sql/manual/revise_climate_2026_question_order_and_texts.sql; do not rerun this seed to renumber historical records.
+-- Existing CLIMATE_2026 databases must use the manual SQL scripts for approved title/question changes; do not rerun this seed for production updates.
 -- Q1/Q2 use organization catalogs. Q3 is a static work-profile choice.
 -- This survey is seeded as DRAFT. A human must explicitly approve and activate it later.
 
@@ -11,7 +11,7 @@ START TRANSACTION;
 INSERT INTO surveys (code, title, intro_text, completion_text, status, version, starts_on, ends_on, min_group_size)
 VALUES (
     'CLIMATE_2026',
-    'Pesquisa de Clima Organizacional 2026',
+    'Pesquisa de Engajamento - Voz do Colaborador',
     CONCAT(
     'Sua voz faz parte da nossa evolução.',
     CHAR(10),
