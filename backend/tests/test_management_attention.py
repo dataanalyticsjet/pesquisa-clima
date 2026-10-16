@@ -92,11 +92,11 @@ def find_sc(regional, code):
     return next(item for item in regional["scs"] if item["sc_code"] == code)
 
 
-def test_catalog_contains_all_nine_regionals_and_29_service_centers():
+def test_catalog_contains_all_nine_regionals_and_31_service_centers():
     assert [entry.code for entry in REGIONAL_SC_CATALOG] == [
         "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
     ]
-    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 29
+    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 31
     matriz = REGIONAL_SC_CATALOG[0]
     assert matriz.display_name == "Matriz"
     assert [(sc.code, sc.display_name) for sc in matriz.service_centers] == [
@@ -110,7 +110,7 @@ def test_catalog_contains_all_nine_regionals_and_29_service_centers():
         ("MATRIZ", ["MATRIZ"]),
         ("BA", ["AJU", "FEC", "VDC"]),
         ("CE", ["FOR", "JGS", "SLZ", "SNS", "THE"]),
-        ("GP", ["ANA", "BSB", "CGB", "CGR", "GYN", "MRB", "PMW", "PVH", "STM"]),
+        ("GP", ["ANA", "BSB", "CGB", "CGR", "GYN", "MAO", "MRB", "PMW", "PVH", "RBR", "STM"]),
         ("MG/SPN", ["CGE", "CVH", "RAO", "RBP"]),
         ("PR", ["BNU", "NSR", "SJS"]),
         ("RJ", ["SJM", "SRR-ES"]),
@@ -207,7 +207,7 @@ def test_every_catalog_group_and_eligible_question_is_returned_with_zero_counts(
     payload = configure_service(monkeypatch)
 
     assert len(payload["regionals"]) == 9
-    assert sum(len(region["scs"]) for region in payload["regionals"]) == 29
+    assert sum(len(region["scs"]) for region in payload["regionals"]) == 31
     assert payload["regionals"][0]["regional_code"] == "MATRIZ"
     assert payload["regionals"][0]["scs"][0]["sc_code"] == "MATRIZ"
     for regional in payload["regionals"]:
@@ -318,7 +318,7 @@ def test_groups_with_data_are_sorted_by_attention_rate_and_no_group_is_dropped(m
     assert [item["regional_code"] for item in payload["regionals"][:2]] == ["CE", "BA"]
     assert payload["regionals"][2]["regional_code"] == "GP"
     assert len(payload["regionals"]) == 9
-    assert sum(len(item["scs"]) for item in payload["regionals"]) == 29
+    assert sum(len(item["scs"]) for item in payload["regionals"]) == 31
 
 
 def test_question_suppressed_by_minimum_remains_in_the_response(monkeypatch):
@@ -486,6 +486,10 @@ def test_catalog_entry_is_shared_with_submission_validation():
     assert catalog.validate_selection("ORG_BASE", "SNS", regional_code="CE") is True
     assert catalog.validate_selection("ORG_BASE", "SLZ", regional_code="BA") is False
     assert catalog.validate_selection("ORG_BASE", "SNS", regional_code="GP") is False
+    assert catalog.validate_selection("ORG_BASE", "MAO", regional_code="GP") is True
+    assert catalog.validate_selection("ORG_BASE", "RBR", regional_code="GP") is True
+    assert catalog.validate_selection("ORG_BASE", "MAO", regional_code="CE") is False
+    assert catalog.validate_selection("ORG_BASE", "RBR", regional_code="RJ") is False
 
 
 def test_ce_attention_groups_include_slz_and_sns_with_existing_suppression(monkeypatch):
@@ -519,3 +523,36 @@ def test_ce_attention_groups_include_slz_and_sns_with_existing_suppression(monke
     assert sns["respondent_count"] is None
     assert sns["analytics_available"] is False
     assert sns["attention_rate"] is None
+
+
+def test_gp_attention_groups_include_new_bases_with_existing_suppression(monkeypatch):
+    payload = configure_service(
+        monkeypatch,
+        group_counts=[("REGIONAL", "GP", 5), ("BASE", "MAO", 5), ("BASE", "RBR", 4)],
+        score_counts=[
+            ("REGIONAL", "GP", 44, "Q4", "Pergunta elegível 4", 4, 1, 1),
+            ("REGIONAL", "GP", 44, "Q4", "Pergunta elegível 4", 4, 5, 4),
+            ("BASE", "MAO", 44, "Q4", "Pergunta elegível 4", 4, 2, 5),
+            ("BASE", "RBR", 44, "Q4", "Pergunta elegível 4", 4, 1, 4),
+        ],
+        question_counts=[
+            ("REGIONAL", "GP", 44, 5),
+            ("BASE", "MAO", 44, 5),
+            ("BASE", "RBR", 44, 4),
+        ],
+    )
+
+    gp = find_regional(payload, "GP")
+    mao = find_sc(gp, "MAO")
+    rbr = find_sc(gp, "RBR")
+
+    assert gp["respondent_count"] == 5
+    assert gp["analytics_available"] is True
+    assert gp["attention_rate"] == 20.0
+    assert mao["display_name"] == "AM MAO - AM - FLORES"
+    assert mao["respondent_count"] == 5
+    assert mao["attention_rate"] == 100.0
+    assert rbr["display_name"] == "AC RBR - AC SANTA INES"
+    assert rbr["respondent_count"] is None
+    assert rbr["analytics_available"] is False
+    assert rbr["attention_rate"] is None

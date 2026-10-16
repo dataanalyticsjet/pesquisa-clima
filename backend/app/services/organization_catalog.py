@@ -5,10 +5,11 @@ from dataclasses import dataclass
 class ServiceCenter:
     code: str
     name: str
+    display_name_override: str | None = None
 
     @property
     def display_name(self) -> str:
-        return f"{self.code} — {self.name}"
+        return self.display_name_override or f"{self.code} — {self.name}"
 
 
 @dataclass(frozen=True)
@@ -52,9 +53,11 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
             ServiceCenter("CGB", "MT - CUIABA"),
             ServiceCenter("CGR", "MS - CAMPO GRANDE"),
             ServiceCenter("GYN", "GO - GOIANIA"),
+            ServiceCenter("MAO", "AM - FLORES", "AM MAO - AM - FLORES"),
             ServiceCenter("MRB", "PA - MARABÁ"),
             ServiceCenter("PMW", "TO - PALMAS"),
             ServiceCenter("PVH", "RO - NOVO PORTO VELHO"),
+            ServiceCenter("RBR", "AC SANTA INES", "AC RBR - AC SANTA INES"),
             ServiceCenter("STM", "PA - SANTARÉM"),
         ),
     ),

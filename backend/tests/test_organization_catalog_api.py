@@ -22,7 +22,7 @@ def test_catalog_requires_authenticated_user():
     assert response.status_code == 401
 
 
-def test_authenticated_catalog_returns_nine_regionals_and_twenty_nine_scs():
+def test_authenticated_catalog_returns_nine_regionals_and_thirty_one_scs():
     app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
     regionals = client.get("/api/organization/regionals")
     assert regionals.status_code == 200
@@ -36,7 +36,7 @@ def test_authenticated_catalog_returns_nine_regionals_and_twenty_nine_scs():
         response = client.get(f"/api/organization/regionals/{item['code']}/scs")
         assert response.status_code == 200
         total += len(response.json()["service_centers"])
-    assert total == 29
+    assert total == 31
 
 
 def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
@@ -44,6 +44,7 @@ def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
     expected = {
         "BA": ["AJU", "FEC", "VDC"],
         "CE": ["FOR", "JGS", "SLZ", "SNS", "THE"],
+        "GP": ["ANA", "BSB", "CGB", "CGR", "GYN", "MAO", "MRB", "PMW", "PVH", "RBR", "STM"],
         "SPE": ["GRU"],
         "SPS": ["BRE"],
         "MATRIZ": ["MATRIZ"],
@@ -65,7 +66,7 @@ def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
     assert invalid.json() == {"detail": "REGIONAL_NOT_FOUND"}
 
 
-def test_slz_and_sns_are_official_ce_units_without_duplicate_codes():
+def test_units_keep_exact_official_names_and_codes_are_unique():
     app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
     all_codes = []
 
@@ -75,7 +76,19 @@ def test_slz_and_sns_are_official_ce_units_without_duplicate_codes():
         units = response.json()["service_centers"]
         codes = [unit["code"] for unit in units]
         all_codes.extend(codes)
-        if regional["code"] == "CE":
+        if regional["code"] == "GP":
+            by_code = {unit["code"]: unit for unit in units}
+            assert by_code["MAO"] == {
+                "code": "MAO",
+                "name": "AM - FLORES",
+                "display_name": "AM MAO - AM - FLORES",
+            }
+            assert by_code["RBR"] == {
+                "code": "RBR",
+                "name": "AC SANTA INES",
+                "display_name": "AC RBR - AC SANTA INES",
+            }
+        elif regional["code"] == "CE":
             by_code = {unit["code"]: unit for unit in units}
             assert by_code["SLZ"] == {
                 "code": "SLZ",
@@ -88,7 +101,7 @@ def test_slz_and_sns_are_official_ce_units_without_duplicate_codes():
                 "display_name": "SNS — PE - Nossa Senhora Aparecida",
             }
         else:
-            assert "SLZ" not in codes
-            assert "SNS" not in codes
+            assert "MAO" not in codes
+            assert "RBR" not in codes
 
     assert len(all_codes) == len(set(all_codes))
