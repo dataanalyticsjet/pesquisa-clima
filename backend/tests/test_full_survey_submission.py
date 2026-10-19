@@ -33,10 +33,11 @@ REGIONAL_SC_CASES = (
     ("CE", "FOR"),
     ("GP", "ANA"),
     ("MG/SPN", "CGE"),
-    ("PR", "BNU"),
+    ("PR", "SJS"),
     ("RJ", "SJM"),
     ("SPE", "GRU"),
     ("SPS", "BRE"),
+    ("SR", "BNU"),
 )
 SYNTHETIC_TEXT = {
     "Q40": "Resposta fictícia: organizar as etapas da jornada.",

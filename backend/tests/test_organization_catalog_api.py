@@ -22,12 +22,12 @@ def test_catalog_requires_authenticated_user():
     assert response.status_code == 401
 
 
-def test_authenticated_catalog_returns_nine_regionals_and_thirty_one_scs():
+def test_authenticated_catalog_returns_ten_regionals_and_thirty_two_scs():
     app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=10)
     regionals = client.get("/api/organization/regionals")
     assert regionals.status_code == 200
     assert [item["code"] for item in regionals.json()["regionals"]] == [
-        "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
+        "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS", "SR"
     ]
     assert regionals.json()["regionals"][0]["label"] == "Matriz"
 
@@ -36,7 +36,7 @@ def test_authenticated_catalog_returns_nine_regionals_and_thirty_one_scs():
         response = client.get(f"/api/organization/regionals/{item['code']}/scs")
         assert response.status_code == 200
         total += len(response.json()["service_centers"])
-    assert total == 31
+    assert total == 32
 
 
 def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
@@ -47,6 +47,8 @@ def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
         "GP": ["ANA", "BSB", "CGB", "CGR", "GYN", "MAO", "MRB", "PMW", "PVH", "RBR", "STM"],
         "SPE": ["GRU"],
         "SPS": ["BRE"],
+        "PR": ["SJS"],
+        "SR": ["BNU", "NSR", "BLU"],
         "MATRIZ": ["MATRIZ"],
     }
     for regional, codes in expected.items():
@@ -56,7 +58,7 @@ def test_catalog_returns_expected_sc_codes_and_rejects_invalid_regional():
             assert response.json()["service_centers"] == [
                 {"code": "MATRIZ", "name": "Matriz", "display_name": "MATRIZ — Matriz"}
             ]
-    for regional in ("BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"):
+    for regional in ("BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS", "SR"):
         response = client.get(f"/api/organization/regionals/{regional}/scs")
         assert "MATRIZ" not in {
             item["code"] for item in response.json()["service_centers"]
@@ -100,8 +102,23 @@ def test_units_keep_exact_official_names_and_codes_are_unique():
                 "name": "PE - Nossa Senhora Aparecida",
                 "display_name": "SNS — PE - Nossa Senhora Aparecida",
             }
+        elif regional["code"] == "PR":
+            assert [unit["code"] for unit in units] == ["SJS"]
+        elif regional["code"] == "SR":
+            by_code = {unit["code"]: unit for unit in units}
+            assert [unit["code"] for unit in units] == ["BNU", "NSR", "BLU"]
+            assert by_code["BNU"]["display_name"] == "BNU — SC - BLUMENAU"
+            assert by_code["NSR"]["display_name"] == "NSR — RS - NOVA SANTA RITA"
+            assert by_code["BLU"] == {
+                "code": "BLU",
+                "name": "SC BLU - BLUMENAU",
+                "display_name": "BLU — SC BLU - BLUMENAU",
+            }
         else:
             assert "MAO" not in codes
             assert "RBR" not in codes
+            assert "BNU" not in codes
+            assert "NSR" not in codes
+            assert "BLU" not in codes
 
     assert len(all_codes) == len(set(all_codes))

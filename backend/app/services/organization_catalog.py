@@ -73,8 +73,6 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
     RegionalCatalogEntry(
         "PR",
         (
-            ServiceCenter("BNU", "SC - BLUMENAU"),
-            ServiceCenter("NSR", "RS - NOVA SANTA RITA"),
             ServiceCenter("SJS", "PR - SÃO JOSÉ DOS PINHAIS"),
         ),
     ),
@@ -87,6 +85,14 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
     ),
     RegionalCatalogEntry("SPE", (ServiceCenter("GRU", "SP - GUARULHOS"),)),
     RegionalCatalogEntry("SPS", (ServiceCenter("BRE", "SP - BARUERI"),)),
+    RegionalCatalogEntry(
+        "SR",
+        (
+            ServiceCenter("BNU", "SC - BLUMENAU"),
+            ServiceCenter("NSR", "RS - NOVA SANTA RITA"),
+            ServiceCenter("BLU", "SC BLU - BLUMENAU"),
+        ),
+    ),
 )
 
 

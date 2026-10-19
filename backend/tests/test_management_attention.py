@@ -92,11 +92,11 @@ def find_sc(regional, code):
     return next(item for item in regional["scs"] if item["sc_code"] == code)
 
 
-def test_catalog_contains_all_nine_regionals_and_31_service_centers():
+def test_catalog_contains_all_ten_regionals_and_32_service_centers():
     assert [entry.code for entry in REGIONAL_SC_CATALOG] == [
-        "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS"
+        "MATRIZ", "BA", "CE", "GP", "MG/SPN", "PR", "RJ", "SPE", "SPS", "SR"
     ]
-    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 31
+    assert sum(len(entry.service_centers) for entry in REGIONAL_SC_CATALOG) == 32
     matriz = REGIONAL_SC_CATALOG[0]
     assert matriz.display_name == "Matriz"
     assert [(sc.code, sc.display_name) for sc in matriz.service_centers] == [
@@ -112,10 +112,11 @@ def test_catalog_contains_all_nine_regionals_and_31_service_centers():
         ("CE", ["FOR", "JGS", "SLZ", "SNS", "THE"]),
         ("GP", ["ANA", "BSB", "CGB", "CGR", "GYN", "MAO", "MRB", "PMW", "PVH", "RBR", "STM"]),
         ("MG/SPN", ["CGE", "CVH", "RAO", "RBP"]),
-        ("PR", ["BNU", "NSR", "SJS"]),
+        ("PR", ["SJS"]),
         ("RJ", ["SJM", "SRR-ES"]),
         ("SPE", ["GRU"]),
         ("SPS", ["BRE"]),
+        ("SR", ["BNU", "NSR", "BLU"]),
     ],
 )
 def test_catalog_has_official_sc_codes_in_source_order(regional, expected):
@@ -206,8 +207,8 @@ def test_group_rate_uses_weighted_answers_not_mean_of_question_percentages(monke
 def test_every_catalog_group_and_eligible_question_is_returned_with_zero_counts(monkeypatch):
     payload = configure_service(monkeypatch)
 
-    assert len(payload["regionals"]) == 9
-    assert sum(len(region["scs"]) for region in payload["regionals"]) == 31
+    assert len(payload["regionals"]) == 10
+    assert sum(len(region["scs"]) for region in payload["regionals"]) == 32
     assert payload["regionals"][0]["regional_code"] == "MATRIZ"
     assert payload["regionals"][0]["scs"][0]["sc_code"] == "MATRIZ"
     for regional in payload["regionals"]:
@@ -317,8 +318,8 @@ def test_groups_with_data_are_sorted_by_attention_rate_and_no_group_is_dropped(m
 
     assert [item["regional_code"] for item in payload["regionals"][:2]] == ["CE", "BA"]
     assert payload["regionals"][2]["regional_code"] == "GP"
-    assert len(payload["regionals"]) == 9
-    assert sum(len(item["scs"]) for item in payload["regionals"]) == 31
+    assert len(payload["regionals"]) == 10
+    assert sum(len(item["scs"]) for item in payload["regionals"]) == 32
 
 
 def test_question_suppressed_by_minimum_remains_in_the_response(monkeypatch):
@@ -414,7 +415,7 @@ def test_management_roles_can_access_attention(monkeypatch, role):
     response = client.get("/api/management/surveys/CLIMATE_2026/attention")
 
     assert response.status_code == 200
-    assert len(response.json()["regionals"]) == 9
+    assert len(response.json()["regionals"]) == 10
 
 
 @pytest.mark.parametrize("access_type", ["INTERNAL", "EXTERNAL"])
@@ -490,6 +491,14 @@ def test_catalog_entry_is_shared_with_submission_validation():
     assert catalog.validate_selection("ORG_BASE", "RBR", regional_code="GP") is True
     assert catalog.validate_selection("ORG_BASE", "MAO", regional_code="CE") is False
     assert catalog.validate_selection("ORG_BASE", "RBR", regional_code="RJ") is False
+    assert catalog.validate_selection("ORG_REGIONAL", "SR") is True
+    assert catalog.validate_selection("ORG_BASE", "SJS", regional_code="PR") is True
+    assert catalog.validate_selection("ORG_BASE", "BNU", regional_code="PR") is False
+    assert catalog.validate_selection("ORG_BASE", "NSR", regional_code="PR") is False
+    assert catalog.validate_selection("ORG_BASE", "BLU", regional_code="PR") is False
+    assert catalog.validate_selection("ORG_BASE", "BNU", regional_code="SR") is True
+    assert catalog.validate_selection("ORG_BASE", "NSR", regional_code="SR") is True
+    assert catalog.validate_selection("ORG_BASE", "BLU", regional_code="SR") is True
 
 
 def test_ce_attention_groups_include_slz_and_sns_with_existing_suppression(monkeypatch):
@@ -556,3 +565,38 @@ def test_gp_attention_groups_include_new_bases_with_existing_suppression(monkeyp
     assert rbr["respondent_count"] is None
     assert rbr["analytics_available"] is False
     assert rbr["attention_rate"] is None
+
+
+def test_sr_attention_groups_include_transferred_and_new_bases_with_suppression(monkeypatch):
+    payload = configure_service(
+        monkeypatch,
+        group_counts=[("REGIONAL", "SR", 5), ("BASE", "BNU", 5), ("BASE", "NSR", 4), ("BASE", "BLU", 0)],
+        score_counts=[
+            ("REGIONAL", "SR", 44, "Q4", "Pergunta elegível 4", 4, 1, 1),
+            ("REGIONAL", "SR", 44, "Q4", "Pergunta elegível 4", 4, 5, 4),
+            ("BASE", "BNU", 44, "Q4", "Pergunta elegível 4", 4, 2, 5),
+            ("BASE", "NSR", 44, "Q4", "Pergunta elegível 4", 4, 1, 4),
+        ],
+        question_counts=[
+            ("REGIONAL", "SR", 44, 5),
+            ("BASE", "BNU", 44, 5),
+            ("BASE", "NSR", 44, 4),
+            ("BASE", "BLU", 44, 0),
+        ],
+    )
+
+    sr = find_regional(payload, "SR")
+    bnu = find_sc(sr, "BNU")
+    nsr = find_sc(sr, "NSR")
+    blu = find_sc(sr, "BLU")
+
+    assert sr["respondent_count"] == 5
+    assert sr["analytics_available"] is True
+    assert sr["attention_rate"] == 20.0
+    assert bnu["respondent_count"] == 5
+    assert bnu["attention_rate"] == 100.0
+    assert nsr["respondent_count"] is None
+    assert nsr["analytics_available"] is False
+    assert nsr["attention_rate"] is None
+    assert blu["respondent_count"] == 0
+    assert blu["attention_rate"] is None
