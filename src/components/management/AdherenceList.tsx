@@ -22,7 +22,7 @@ export function AdherenceList({ regionals }: { regionals: ManagementAdherenceReg
               <summary className="adherence-row">
                 <span className="adherence-row__region">{regional.regional_name}</span>
                 {regional.response_count === null ? (
-                  <span className="adherence-row__protected" role="status">{t("management.insufficient")}</span>
+                  <span className="adherence-row__protected" role="status">{t("management.countProtected")}</span>
                 ) : (
                   <>
                     <div className="adherence-row__track" aria-hidden="true">
@@ -48,7 +48,7 @@ export function AdherenceList({ regionals }: { regionals: ManagementAdherenceReg
                     <span className="adherence-base-row__code">{base.base_code}</span>
                     <span className="adherence-base-row__name">{base.base_name}</span>
                     {base.response_count === null ? (
-                      <span className="adherence-base-row__protected" role="status">{t("management.insufficient")}</span>
+                      <span className="adherence-base-row__protected" role="status">{t("management.countProtected")}</span>
                     ) : (
                       <>
                         <div className="adherence-base-row__track" aria-hidden="true">

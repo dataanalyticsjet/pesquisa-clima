@@ -25,6 +25,28 @@ class _OrganizationResponseDistribution:
     total_is_safe: bool
 
 
+def _hidden_counts_are_disclosure_safe(
+    primary_counts: list[int], complementary_counts: list[int], minimum: int
+) -> bool:
+    """Return whether a published total leaves every primary hidden count ambiguous."""
+    if not primary_counts:
+        return True
+
+    primary_count = len(primary_counts)
+    residual = sum(primary_counts) + sum(complementary_counts)
+    if complementary_counts:
+        other_groups_minimum = (primary_count - 1) + len(complementary_counts) * minimum
+        feasible_minimum = 1
+        feasible_maximum = min(minimum - 1, residual - other_groups_minimum)
+    else:
+        other_groups_minimum = primary_count - 1
+        other_groups_maximum = (primary_count - 1) * (minimum - 1)
+        feasible_minimum = max(1, residual - other_groups_maximum)
+        feasible_maximum = min(minimum - 1, residual - other_groups_minimum)
+
+    return feasible_minimum < feasible_maximum
+
+
 def _organization_response_distribution(
     session: Session, survey_id: int, minimum: int
 ) -> _OrganizationResponseDistribution:
@@ -91,10 +113,32 @@ def _organization_response_distribution(
     total_is_safe = (
         mapped_count == total_responses
         and mappings_are_valid
-        and not unsafe_regionals
-        and not unsafe_bases
         and not 0 < total_responses < minimum
     )
+    if total_is_safe:
+        primary_counts = [
+            base_counts[key]
+            for key in unsafe_bases
+            if key in base_counts and 0 < base_counts[key] < minimum
+        ]
+        total_is_safe = _hidden_counts_are_disclosure_safe(primary_counts, [], minimum)
+
+        if not total_is_safe:
+            candidates = sorted(
+                (
+                    (key, count)
+                    for key, count in base_counts.items()
+                    if key not in unsafe_bases and count >= minimum
+                ),
+                key=lambda item: (item[1], item[0]),
+            )
+            for key, count in candidates:
+                if _hidden_counts_are_disclosure_safe(primary_counts, [count], minimum):
+                    unsafe_bases.add(key)
+                    unsafe_regionals.add(key[0])
+                    total_is_safe = True
+                    break
+
     return _OrganizationResponseDistribution(
         total_responses=total_responses,
         regional_counts=regional_counts,

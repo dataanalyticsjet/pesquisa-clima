@@ -202,7 +202,7 @@ def test_service_uses_anonymous_response_count_for_privacy_and_keeps_counts_sepa
     assert result["respondent_count"] is None
 
 
-def test_overview_hides_global_counts_when_a_regional_group_is_suppressed(monkeypatch):
+def test_overview_keeps_safe_global_counts_and_nps_when_small_region_can_be_complemented(monkeypatch):
     survey = set_survey(min_group_size=5)
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 7)
@@ -221,13 +221,13 @@ def test_overview_hides_global_counts_when_a_regional_group_is_suppressed(monkey
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
-    assert result["completed_participations"] is None
-    assert result["anonymous_response_count"] is None
-    assert result["respondent_count"] is None
+    assert result["completed_participations"] == 7
+    assert result["anonymous_response_count"] == 7
+    assert result["respondent_count"] == 7
     assert result["nps"] == 100
 
 
-def test_overview_hides_totals_when_a_base_is_suppressed(monkeypatch):
+def test_overview_restores_safe_global_totals_when_a_small_base_is_complemented(monkeypatch):
     survey = set_survey(min_group_size=5)
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 10)
@@ -241,9 +241,30 @@ def test_overview_hides_totals_when_a_base_is_suppressed(monkeypatch):
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
+    assert result["completed_participations"] == 10
+    assert result["anonymous_response_count"] == 10
+    assert result["respondent_count"] == 10
+    assert result["nps"] == 100
+
+
+def test_overview_keeps_total_hidden_when_the_only_complement_would_reveal_a_small_count(monkeypatch):
+    survey = set_survey(min_group_size=5)
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 6)
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 6)
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional_and_base",
+        lambda db, sid: [("GP", "ANA", 5), ("GP", "BSB", 1)],
+    )
+    monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(10, 6)])
+
+    result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
+
     assert result["completed_participations"] is None
     assert result["anonymous_response_count"] is None
     assert result["respondent_count"] is None
+    assert result["nps"] == 100
 
 
 def test_overview_never_publishes_a_participation_count_below_the_minimum(monkeypatch):
@@ -653,7 +674,7 @@ def test_pillar_below_minimum_suppresses_index(monkeypatch):
     assert first_pillar["index"] is None
 
 
-def test_pillar_count_is_hidden_when_it_could_reveal_a_suppressed_regional_count(monkeypatch):
+def test_pillar_count_is_published_when_complementary_suppression_protects_regional_counts(monkeypatch):
     configure_pillars_request(
         monkeypatch,
         survey=set_survey(min_group_size=5),
@@ -667,10 +688,10 @@ def test_pillar_count_is_hidden_when_it_could_reveal_a_suppressed_regional_count
 
     assert first_pillar["analytics_available"] is True
     assert first_pillar["index"] == 75.0
-    assert first_pillar["respondent_count"] is None
+    assert first_pillar["respondent_count"] == 7
 
 
-def test_pillar_count_is_hidden_when_a_base_count_is_suppressed(monkeypatch):
+def test_pillar_count_is_published_when_complementary_suppression_protects_a_base_count(monkeypatch):
     configure_pillars_request(
         monkeypatch,
         survey=set_survey(min_group_size=5),
@@ -686,7 +707,57 @@ def test_pillar_count_is_hidden_when_a_base_count_is_suppressed(monkeypatch):
 
     assert first_pillar["analytics_available"] is True
     assert first_pillar["index"] == 75.0
-    assert first_pillar["respondent_count"] is None
+    assert first_pillar["respondent_count"] == 10
+
+
+def test_overview_pillars_and_adherence_share_safe_total_and_suppressed_details(monkeypatch):
+    survey = set_survey(min_group_size=5)
+    session = FakeSession()
+    paired_rows = [("GP", "ANA", 8), ("GP", "BSB", 2)]
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 10)
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 10)
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional_and_base",
+        lambda db, sid: paired_rows,
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_q39_score_counts",
+        lambda db, sid: [(10, 10)],
+    )
+
+    overview = management_service.get_survey_overview(session, "CLIMATE_2026")
+    assert overview["completed_participations"] == 10
+    assert overview["anonymous_response_count"] == 10
+    assert overview["nps"] == 100
+
+    monkeypatch.setattr(
+        management_repository,
+        "get_pillar_definitions",
+        lambda db, sid: [("CONDICOES", "Condições", 1, 1)],
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_pillar_answer_score_counts",
+        lambda db, sid: [("CONDICOES", 4, 10)],
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_pillar_respondent_counts",
+        lambda db, sid: [("CONDICOES", 10)],
+    )
+    pillars = management_service.get_survey_pillars(session, "CLIMATE_2026")
+    assert pillars["pillars"][0]["respondent_count"] == 10
+
+    adherence = management_service.get_survey_adherence(session, "CLIMATE_2026")
+    assert adherence["total_responses"] == overview["anonymous_response_count"]
+    gp = next(row for row in adherence["regionals"] if row["regional_code"] == "GP")
+    bases = {row["base_code"]: row for row in gp["bases"]}
+    assert gp["response_count"] is None
+    assert bases["ANA"]["response_count"] is None
+    assert bases["BSB"]["response_count"] is None
 
 
 def test_pillar_count_below_minimum_is_hidden_even_when_regional_total_is_safe(monkeypatch):

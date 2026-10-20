@@ -165,7 +165,7 @@ def test_attention_hides_regional_count_when_a_base_count_is_suppressed(monkeypa
     gp = find_regional(payload, "GP")
     assert gp["respondent_count"] is None
     assert gp["questions"][0]["respondent_count"] is None
-    assert find_sc(gp, "ANA")["respondent_count"] == 8
+    assert find_sc(gp, "ANA")["respondent_count"] is None
     assert find_sc(gp, "BSB")["respondent_count"] is None
 
 
