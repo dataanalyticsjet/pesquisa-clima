@@ -13,9 +13,8 @@ _STRINGS = {
         "bases": "Bases cadastradas",
         "base_code": "Código da base",
         "base_name": "Nome oficial da base",
-        "protected": "Dados protegidos",
         "generated": "Gerado em (UTC)",
-        "note": "Contagens abaixo do mínimo de {minimum} respostas são protegidas; zero é exibido como 0. Totais podem ser omitidos para evitar inferências.",
+        "note": "Contagens operacionais mostram formulários concluídos por Regional e Base para perfis autorizados da Gestão. A planilha não contém respostas individuais nem dados de identidade.",
     },
     "zh": {
         "regional": "区域",
@@ -23,9 +22,8 @@ _STRINGS = {
         "bases": "已注册服务中心数",
         "base_code": "服务中心代码",
         "base_name": "官方名称",
-        "protected": "受保护的数据",
         "generated": "生成时间（UTC）",
-        "note": "低于最低人数 {minimum} 的具体数量受到保护；零份回答显示为0。为避免推算，部分总数可能隐藏。",
+        "note": "此表向获授权的管理人员展示各区域和服务中心已完成问卷的运营数量，不包含个人回答或身份信息。",
     },
 }
 
@@ -44,7 +42,11 @@ def build_adherence_workbook(payload: dict[str, object], locale: str = "pt") -> 
         if locale != "zh"
         else "按区域和服务中心查看参与情况"
     )
-    workbook.properties.subject = "Contagens anônimas com supressão de grupos pequenos"
+    workbook.properties.subject = (
+        "Contagens operacionais anônimas de formulários concluídos"
+        if locale != "zh"
+        else "匿名问卷运营统计"
+    )
 
     regional_sheet = workbook.active
     regional_sheet.title = "区域" if locale == "zh" else "Regional"
@@ -64,22 +66,22 @@ def build_adherence_workbook(payload: dict[str, object], locale: str = "pt") -> 
 
     for regional in regionals:
         regional_name = str(regional["regional_name"])
-        regional_count = regional["response_count"]
+        regional_count = int(regional["response_count"])
         regional_sheet.append(
             [
                 regional_name,
-                regional_count if regional_count is not None else labels["protected"],
+                regional_count,
                 int(regional["base_count"]),
             ]
         )
         for base in regional["bases"]:
-            base_count = base["response_count"]
+            base_count = int(base["response_count"])
             base_sheet.append(
                 [
                     regional_name,
                     str(base["base_code"]),
                     str(base["base_name"]),
-                    base_count if base_count is not None else labels["protected"],
+                    base_count,
                 ]
             )
 
@@ -116,7 +118,7 @@ def build_adherence_workbook(payload: dict[str, object], locale: str = "pt") -> 
         sheet.cell(
             metadata_row + 1,
             1,
-            labels["note"].format(minimum=int(payload["min_group_size"])),
+            labels["note"],
         )
         sheet.merge_cells(
             start_row=metadata_row + 1,

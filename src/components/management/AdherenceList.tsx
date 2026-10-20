@@ -21,22 +21,16 @@ export function AdherenceList({ regionals }: { regionals: ManagementAdherenceReg
             <details className="adherence-group__details" open>
               <summary className="adherence-row">
                 <span className="adherence-row__region">{regional.regional_name}</span>
-                {regional.response_count === null ? (
-                  <span className="adherence-row__protected" role="status">{t("management.countProtected")}</span>
-                ) : (
-                  <>
-                    <div className="adherence-row__track" aria-hidden="true">
-                      <span
-                        style={{
-                          width: regional.response_count === 0
-                            ? "0%"
-                            : `${(regional.response_count / maxVisibleRegionalCount) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <strong>{formatInteger.format(regional.response_count)}</strong>
-                  </>
-                )}
+                <div className="adherence-row__track" aria-hidden="true">
+                  <span
+                    style={{
+                      width: maxVisibleRegionalCount === 0
+                        ? "0%"
+                        : `${(regional.response_count / maxVisibleRegionalCount) * 100}%`,
+                    }}
+                  />
+                </div>
+                <strong>{formatInteger.format(regional.response_count)}</strong>
                 <span className="adherence-row__disclosure" aria-hidden="true" />
               </summary>
               <ul
@@ -47,22 +41,16 @@ export function AdherenceList({ regionals }: { regionals: ManagementAdherenceReg
                   <li className="adherence-base-row" key={base.base_code}>
                     <span className="adherence-base-row__code">{base.base_code}</span>
                     <span className="adherence-base-row__name">{base.base_name}</span>
-                    {base.response_count === null ? (
-                      <span className="adherence-base-row__protected" role="status">{t("management.countProtected")}</span>
-                    ) : (
-                      <>
-                        <div className="adherence-base-row__track" aria-hidden="true">
-                          <span
-                            style={{
-                              width: maxVisibleBaseCount === 0
-                                ? "0%"
-                                : `${(base.response_count / maxVisibleBaseCount) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <strong>{formatInteger.format(base.response_count)}</strong>
-                      </>
-                    )}
+                    <div className="adherence-base-row__track" aria-hidden="true">
+                      <span
+                        style={{
+                          width: maxVisibleBaseCount === 0
+                            ? "0%"
+                            : `${(base.response_count / maxVisibleBaseCount) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <strong>{formatInteger.format(base.response_count)}</strong>
                   </li>
                 ))}
               </ul>

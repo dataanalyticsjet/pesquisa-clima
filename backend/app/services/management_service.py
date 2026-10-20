@@ -166,11 +166,7 @@ def get_survey_overview(session: Session, survey_code: str) -> dict[str, object]
         raise ManagementSurveyNotFoundError
 
     completed_participations = management_repository.count_completed_participations(session, survey.id)
-    distribution = _organization_response_distribution(
-        session, survey.id, int(survey.min_group_size)
-    )
-    anonymous_response_count = distribution.total_responses
-    total_is_safe = distribution.total_is_safe
+    anonymous_response_count = management_repository.count_anonymous_responses(session, survey.id)
     respondent_count = anonymous_response_count
     min_group_size = survey.min_group_size
     analytics_available = respondent_count >= min_group_size
@@ -188,13 +184,9 @@ def get_survey_overview(session: Session, survey_code: str) -> dict[str, object]
         "survey_code": survey.code,
         "survey_status": survey.status,
         "min_group_size": min_group_size,
-        "completed_participations": (
-            _privacy_safe_count(completed_participations, int(min_group_size))
-            if total_is_safe
-            else None
-        ),
-        "anonymous_response_count": anonymous_response_count if total_is_safe else None,
-        "respondent_count": respondent_count if total_is_safe else None,
+        "completed_participations": completed_participations,
+        "anonymous_response_count": anonymous_response_count,
+        "respondent_count": respondent_count,
         "analytics_available": analytics_available,
         "nps": nps,
         "invited_count": None,
@@ -291,37 +283,31 @@ def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object
         raise ManagementSurveyNotFoundError
 
     minimum = int(survey.min_group_size)
-    distribution = _organization_response_distribution(session, survey.id, minimum)
-    total_responses = distribution.total_responses
-    counts_by_regional = distribution.regional_counts
+    total_responses = management_repository.count_anonymous_responses(session, survey.id)
+    counts_by_regional = dict(
+        management_repository.get_anonymous_response_counts_by_regional(session, survey.id)
+    )
+    counts_by_base = dict(
+        management_repository.get_anonymous_response_counts_by_base(session, survey.id)
+    )
     catalog = organization_catalog_service.get_regional_sc_catalog()
     regionals = []
     for regional in catalog:
         raw_regional_count = counts_by_regional.get(regional.code, 0)
-        regional_is_safe = (
-            regional.code not in distribution.unsafe_regionals
-            and (raw_regional_count == 0 or raw_regional_count >= minimum)
-        )
-        regional_count = raw_regional_count if regional_is_safe else None
         bases = []
         for service_center in regional.service_centers:
-            key = (regional.code, service_center.code)
-            raw_base_count = distribution.base_counts.get(key, 0)
-            base_is_safe = (
-                key not in distribution.unsafe_bases
-                and (raw_base_count == 0 or raw_base_count >= minimum)
-            )
+            raw_base_count = counts_by_base.get(service_center.code, 0)
             bases.append(
                 {
                     "base_code": service_center.code,
                     "base_name": service_center.display_name_override or service_center.name,
-                    "response_count": raw_base_count if base_is_safe else None,
-                    "analytics_available": base_is_safe and raw_base_count >= minimum,
+                    "response_count": raw_base_count,
+                    "analytics_available": raw_base_count >= minimum,
                 }
             )
         bases.sort(
             key=lambda item: (
-                0 if item["analytics_available"] else 1 if item["response_count"] is None else 2,
+                0 if item["analytics_available"] else 1,
                 -int(item["response_count"] or 0) if item["analytics_available"] else 0,
                 next(
                     index
@@ -334,10 +320,8 @@ def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object
             {
                 "regional_code": regional.code,
                 "regional_name": regional.display_name or regional.code,
-                "response_count": regional_count,
-                "analytics_available": (
-                    regional_count is not None and raw_regional_count >= minimum
-                ),
+                "response_count": raw_regional_count,
+                "analytics_available": raw_regional_count >= minimum,
                 "base_count": len(regional.service_centers),
                 "bases": bases,
             }
@@ -345,7 +329,7 @@ def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object
 
     regionals.sort(
         key=lambda item: (
-            0 if item["analytics_available"] else 1 if item["response_count"] is None else 2,
+            0 if item["analytics_available"] else 1,
             -int(item["response_count"] or 0) if item["analytics_available"] else 0,
             next(index for index, regional in enumerate(catalog) if regional.code == item["regional_code"]),
         )
@@ -360,7 +344,7 @@ def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object
         "regionals_with_results": sum(
             regional["analytics_available"] for regional in regionals
         ),
-        "total_responses": total_responses if distribution.total_is_safe else None,
+        "total_responses": total_responses,
         "regionals": regionals,
     }
     logger.info("management adherence analytics generated")

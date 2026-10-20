@@ -75,18 +75,14 @@ function ManagementOverview() {
   const adherenceDetail = data?.adherence_percent === null || !data
     ? t("management.awaitingInvited")
     : t("management.invitedParticipation");
-  const completedValue = data?.completed_participations === null || !data
+  const completedValue = !data
     ? t("management.insufficient")
     : formatInteger.format(data.completed_participations);
-  const completedDetail = data?.completed_participations === null || !data
-    ? t("management.adherenceTotalSuppressed")
-    : t("management.completedDetail");
-  const anonymousValue = data?.anonymous_response_count === null || !data
+  const completedDetail = t("management.completedDetail");
+  const anonymousValue = !data
     ? t("management.insufficient")
     : formatInteger.format(data.anonymous_response_count);
-  const anonymousDetail = data?.anonymous_response_count === null || !data
-    ? t("management.adherenceTotalSuppressed")
-    : t("management.anonymousDetail");
+  const anonymousDetail = t("management.anonymousDetail");
   const npsDetail = data && (!data.analytics_available || data.nps === null)
     ? t("management.minimum", { count: data.min_group_size })
     : t("management.npsScale");

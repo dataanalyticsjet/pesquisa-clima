@@ -62,6 +62,32 @@ def get_anonymous_response_counts_by_regional(
     ]
 
 
+def get_anonymous_response_counts_by_base(
+    session: Session, survey_id: int
+) -> list[tuple[str, int]]:
+    """Count completed anonymous forms by their stored Base segment."""
+    statement = (
+        select(
+            AnonymousResponseSegment.segment_code,
+            func.count(distinct(AnonymousResponseSegment.response_id)),
+        )
+        .select_from(AnonymousResponseSegment)
+        .join(
+            AnonymousResponse,
+            AnonymousResponse.response_id == AnonymousResponseSegment.response_id,
+        )
+        .where(
+            AnonymousResponse.survey_id == survey_id,
+            AnonymousResponseSegment.segment_type == "BASE",
+        )
+        .group_by(AnonymousResponseSegment.segment_code)
+    )
+    return [
+        (str(base_code), int(response_count))
+        for base_code, response_count in session.execute(statement).all()
+    ]
+
+
 def get_anonymous_response_counts_by_regional_and_base(
     session: Session, survey_id: int
 ) -> list[tuple[str | None, str | None, int]]:

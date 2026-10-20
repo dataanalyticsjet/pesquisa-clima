@@ -190,16 +190,14 @@ def test_service_uses_anonymous_response_count_for_privacy_and_keeps_counts_sepa
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: calls.append(("participation", sid)) or 2)
     monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: calls.append(("anonymous", sid)) or 3)
-    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, sid: [])
-    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional_and_base", lambda db, sid: [])
     monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: pytest.fail("NPS must be suppressed"))
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
     assert calls == [("participation", 301), ("anonymous", 301)]
-    assert result["completed_participations"] is None
-    assert result["anonymous_response_count"] is None
-    assert result["respondent_count"] is None
+    assert result["completed_participations"] == 2
+    assert result["anonymous_response_count"] == 3
+    assert result["respondent_count"] == 3
 
 
 def test_overview_keeps_safe_global_counts_and_nps_when_small_region_can_be_complemented(monkeypatch):
@@ -247,7 +245,7 @@ def test_overview_restores_safe_global_totals_when_a_small_base_is_complemented(
     assert result["nps"] == 100
 
 
-def test_overview_keeps_total_hidden_when_the_only_complement_would_reveal_a_small_count(monkeypatch):
+def test_overview_operational_totals_are_exact_even_when_analytical_groups_are_small(monkeypatch):
     survey = set_survey(min_group_size=5)
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 6)
@@ -261,13 +259,33 @@ def test_overview_keeps_total_hidden_when_the_only_complement_would_reveal_a_sma
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
-    assert result["completed_participations"] is None
-    assert result["anonymous_response_count"] is None
-    assert result["respondent_count"] is None
+    assert result["completed_participations"] == 6
+    assert result["anonymous_response_count"] == 6
+    assert result["respondent_count"] == 6
     assert result["nps"] == 100
 
 
-def test_overview_never_publishes_a_participation_count_below_the_minimum(monkeypatch):
+@pytest.mark.parametrize("count", [0, 1, 2, 3, 4, 5])
+def test_overview_displays_operational_form_counts_below_and_above_minimum(monkeypatch, count):
+    survey = set_survey(min_group_size=5)
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: count)
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: count)
+    if count < 5:
+        monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: pytest.fail("NPS must remain suppressed below the threshold"))
+    else:
+        monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(9, count)])
+
+    result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
+
+    assert result["completed_participations"] == count
+    assert result["anonymous_response_count"] == count
+    assert result["respondent_count"] == count
+    assert result["analytics_available"] is (count >= 5)
+    assert result["nps"] == (100 if count >= 5 else None)
+
+
+def test_overview_displays_a_participation_count_below_the_minimum(monkeypatch):
     survey = set_survey(min_group_size=5)
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 4)
@@ -286,8 +304,9 @@ def test_overview_never_publishes_a_participation_count_below_the_minimum(monkey
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
-    assert result["completed_participations"] is None
+    assert result["completed_participations"] == 4
     assert result["anonymous_response_count"] == 5
+    assert result["respondent_count"] == 5
 
 
 def test_nps_is_suppressed_below_min_group_size(monkeypatch):
@@ -307,7 +326,7 @@ def test_nps_is_suppressed_below_min_group_size(monkeypatch):
 
     assert result["analytics_available"] is False
     assert result["nps"] is None
-    assert result["respondent_count"] is None
+    assert result["respondent_count"] == 4
 
 
 def test_exactly_min_group_size_allows_nps_calculation(monkeypatch):
@@ -710,7 +729,7 @@ def test_pillar_count_is_published_when_complementary_suppression_protects_a_bas
     assert first_pillar["respondent_count"] == 10
 
 
-def test_overview_pillars_and_adherence_share_safe_total_and_suppressed_details(monkeypatch):
+def test_overview_operational_counts_do_not_disable_analytical_pillar_privacy(monkeypatch):
     survey = set_survey(min_group_size=5)
     session = FakeSession()
     paired_rows = [("GP", "ANA", 8), ("GP", "BSB", 2)]
@@ -721,6 +740,16 @@ def test_overview_pillars_and_adherence_share_safe_total_and_suppressed_details(
         management_repository,
         "get_anonymous_response_counts_by_regional_and_base",
         lambda db, sid: paired_rows,
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional",
+        lambda db, sid: [("GP", 10)],
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_base",
+        lambda db, sid: [("ANA", 8), ("BSB", 2)],
     )
     monkeypatch.setattr(
         management_repository,
@@ -755,9 +784,36 @@ def test_overview_pillars_and_adherence_share_safe_total_and_suppressed_details(
     assert adherence["total_responses"] == overview["anonymous_response_count"]
     gp = next(row for row in adherence["regionals"] if row["regional_code"] == "GP")
     bases = {row["base_code"]: row for row in gp["bases"]}
-    assert gp["response_count"] is None
-    assert bases["ANA"]["response_count"] is None
-    assert bases["BSB"]["response_count"] is None
+    assert gp["response_count"] == 10
+    assert bases["ANA"]["response_count"] == 8
+    assert bases["BSB"]["response_count"] == 2
+
+
+def test_operational_totals_are_recomputed_as_new_forms_are_submitted(monkeypatch):
+    survey = set_survey(min_group_size=5)
+    count = [2]
+    session = FakeSession()
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: count[0])
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: count[0])
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, sid: [("PR", count[0])])
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_base", lambda db, sid: [("SJS", count[0])])
+    monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(9, count[0])])
+
+    overview_first = management_service.get_survey_overview(session, "CLIMATE_2026")
+    adherence_first = management_service.get_survey_adherence(session, "CLIMATE_2026")
+    count[0] = 6
+    overview_after_new_forms = management_service.get_survey_overview(session, "CLIMATE_2026")
+    adherence_after_new_forms = management_service.get_survey_adherence(session, "CLIMATE_2026")
+
+    pr_first = next(row for row in adherence_first["regionals"] if row["regional_code"] == "PR")
+    pr_updated = next(row for row in adherence_after_new_forms["regionals"] if row["regional_code"] == "PR")
+    assert overview_first["completed_participations"] == 2
+    assert overview_after_new_forms["completed_participations"] == 6
+    assert adherence_first["total_responses"] == 2
+    assert adherence_after_new_forms["total_responses"] == 6
+    assert pr_first["bases"][0]["response_count"] == 2
+    assert pr_updated["bases"][0]["response_count"] == 6
 
 
 def test_pillar_count_below_minimum_is_hidden_even_when_regional_total_is_safe(monkeypatch):

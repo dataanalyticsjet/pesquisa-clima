@@ -25,6 +25,14 @@ def _paired_rows_for_regionals(rows):
     ]
 
 
+def _base_rows_for_pairs(rows):
+    counts = {}
+    for _regional_code, base_code, count in rows:
+        if base_code is not None:
+            counts[base_code] = counts.get(base_code, 0) + count
+    return list(counts.items())
+
+
 class FakeSession:
     def __init__(self, *, total=0, rows=()):
         self.total = total
@@ -76,12 +84,18 @@ def configure_request(
         "get_anonymous_response_counts_by_regional",
         lambda db, survey_id: list(regional_rows),
     )
+    effective_pairs = list(
+        _paired_rows_for_regionals(regional_rows) if paired_rows is None else paired_rows
+    )
     monkeypatch.setattr(
         management_repository,
         "get_anonymous_response_counts_by_regional_and_base",
-        lambda db, survey_id: list(
-            _paired_rows_for_regionals(regional_rows) if paired_rows is None else paired_rows
-        ),
+        lambda db, survey_id: effective_pairs,
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_base",
+        lambda db, survey_id: _base_rows_for_pairs(effective_pairs),
     )
     return session
 
@@ -120,7 +134,22 @@ def test_regional_base_count_query_aggregates_distinct_anonymous_pairs_only():
     assert "response_answers" not in sql
     assert "survey_participation" not in sql
     assert "users" not in sql
-    assert "REGIONAL" in compiled.params.values()
+
+
+def test_base_count_query_counts_distinct_anonymous_forms_without_identity_or_answers():
+    session = FakeSession(rows=[("ANA", 4), ("BSB", 2)])
+
+    result = management_repository.get_anonymous_response_counts_by_base(session, survey_id=301)
+
+    compiled = session.statements[0].compile()
+    sql = str(compiled).lower()
+    assert result == [("ANA", 4), ("BSB", 2)]
+    assert "count(distinct anonymous_response_segments.response_id)" in sql
+    assert "segment_type" in sql
+    assert "anonymous_responses" in sql
+    assert "survey_participation" not in sql
+    assert "users" not in sql
+    assert "response_answers" not in sql
     assert "BASE" in compiled.params.values()
 
 
@@ -229,22 +258,22 @@ def test_adherence_returns_all_official_regionals_sorted_by_visible_counts(monke
     assert "adherence_percent" not in payload
 
 
-def test_safe_global_total_is_visible_while_small_and_complementary_regional_counts_are_hidden(monkeypatch):
+def test_operational_regional_counts_are_visible_below_the_analytical_minimum(monkeypatch):
     configure_request(monkeypatch, total=7, regional_rows=[("GP", 5), ("CE", 2)])
 
     payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
     by_code = {item["regional_code"]: item for item in payload["regionals"]}
 
     assert payload["total_responses"] == 7
-    assert payload["regionals_with_results"] == 0
-    assert by_code["GP"]["response_count"] is None
-    assert by_code["CE"]["response_count"] is None
+    assert payload["regionals_with_results"] == 1
+    assert by_code["GP"]["response_count"] == 5
+    assert by_code["CE"]["response_count"] == 2
     assert by_code["CE"]["analytics_available"] is False
     ce_base = next(base for base in by_code["CE"]["bases"] if base["base_code"] == "FOR")
-    assert ce_base["response_count"] is None
+    assert ce_base["response_count"] == 2
     assert ce_base["analytics_available"] is False
     gp_base = next(base for base in by_code["GP"]["bases"] if base["base_code"] == "ANA")
-    assert gp_base["response_count"] is None
+    assert gp_base["response_count"] == 5
 
 
 @pytest.mark.parametrize(
@@ -254,12 +283,12 @@ def test_safe_global_total_is_visible_while_small_and_complementary_regional_cou
         (8, [("GP", 5), ("UNLISTED", 3)]),  # non-catalog segment
     ],
 )
-def test_total_suppressed_when_regional_coverage_is_incomplete(monkeypatch, total, rows):
+def test_operational_total_remains_visible_when_a_segment_is_unassigned(monkeypatch, total, rows):
     configure_request(monkeypatch, total=total, regional_rows=rows)
 
     payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
 
-    assert payload["total_responses"] is None
+    assert payload["total_responses"] == total
     assert len(payload["regionals"]) == 10
 
 
@@ -279,7 +308,65 @@ def test_zero_forms_returns_zero_for_every_official_regional(monkeypatch):
     )
 
 
-def test_small_and_complementary_base_counts_are_hidden_while_safe_total_is_visible(monkeypatch):
+@pytest.mark.parametrize("count", [0, 1, 2, 3, 4, 5])
+def test_operational_counts_show_exact_total_regional_and_base_values(monkeypatch, count):
+    regional_rows = [("GP", count)] if count else []
+    paired_rows = [("GP", "ANA", count)] if count else []
+    configure_request(
+        monkeypatch,
+        total=count,
+        regional_rows=regional_rows,
+        paired_rows=paired_rows,
+    )
+
+    payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
+    gp = next(row for row in payload["regionals"] if row["regional_code"] == "GP")
+    bases = {base["base_code"]: base for base in gp["bases"]}
+
+    assert payload["total_responses"] == count
+    assert gp["response_count"] == count
+    assert gp["analytics_available"] is (count >= 5)
+    assert bases["ANA"]["response_count"] == count
+    assert bases["ANA"]["analytics_available"] is (count >= 5)
+    assert bases["BSB"]["response_count"] == 0
+
+
+def test_operational_base_count_uses_its_stored_base_code_even_if_regional_pair_is_historical(monkeypatch):
+    configure_request(
+        monkeypatch,
+        total=6,
+        regional_rows=[("PR", 6)],
+        paired_rows=[("PR", "BNU", 6)],
+    )
+
+    payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
+    by_code = {row["regional_code"]: row for row in payload["regionals"]}
+    bnu = next(base for base in by_code["SR"]["bases"] if base["base_code"] == "BNU")
+
+    assert payload["total_responses"] == 6
+    assert by_code["PR"]["response_count"] == 6
+    assert by_code["SR"]["response_count"] == 0
+    assert bnu["response_count"] == 6
+
+
+def test_single_base_regional_displays_its_exact_operational_count(monkeypatch):
+    configure_request(
+        monkeypatch,
+        total=2,
+        regional_rows=[("PR", 2)],
+        paired_rows=[("PR", "SJS", 2)],
+    )
+
+    payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
+    pr = next(row for row in payload["regionals"] if row["regional_code"] == "PR")
+
+    assert pr["response_count"] == 2
+    assert len(pr["bases"]) == 1
+    assert pr["bases"][0]["base_code"] == "SJS"
+    assert pr["bases"][0]["response_count"] == 2
+
+
+def test_small_and_complementary_base_counts_are_visible_as_operational_volume(monkeypatch):
     configure_request(
         monkeypatch,
         total=10,
@@ -292,15 +379,15 @@ def test_small_and_complementary_base_counts_are_hidden_while_safe_total_is_visi
     bases = {item["base_code"]: item for item in gp["bases"]}
 
     assert payload["total_responses"] == 10
-    assert payload["regionals_with_results"] == 0
-    assert gp["response_count"] is None
-    assert gp["analytics_available"] is False
-    assert bases["ANA"]["response_count"] is None
-    assert bases["BSB"]["response_count"] is None
+    assert payload["regionals_with_results"] == 1
+    assert gp["response_count"] == 10
+    assert gp["analytics_available"] is True
+    assert bases["ANA"]["response_count"] == 8
+    assert bases["BSB"]["response_count"] == 2
     assert all("raw_count" not in item for item in gp["bases"])
 
 
-def test_sum_of_small_bases_is_released_only_when_it_does_not_identify_either_count(monkeypatch):
+def test_each_small_base_count_is_visible_for_authorized_operational_reporting(monkeypatch):
     configure_request(
         monkeypatch,
         total=5,
@@ -313,12 +400,12 @@ def test_sum_of_small_bases_is_released_only_when_it_does_not_identify_either_co
     bases = {item["base_code"]: item for item in gp["bases"]}
 
     assert payload["total_responses"] == 5
-    assert gp["response_count"] is None
-    assert bases["ANA"]["response_count"] is None
-    assert bases["BSB"]["response_count"] is None
+    assert gp["response_count"] == 5
+    assert bases["ANA"]["response_count"] == 2
+    assert bases["BSB"]["response_count"] == 3
 
 
-def test_total_stays_hidden_when_visible_data_would_make_a_small_count_exact(monkeypatch):
+def test_exact_operational_counts_are_not_suppressed_by_complementary_analytics_rules(monkeypatch):
     configure_request(
         monkeypatch,
         total=6,
@@ -330,13 +417,13 @@ def test_total_stays_hidden_when_visible_data_would_make_a_small_count_exact(mon
     gp = next(item for item in payload["regionals"] if item["regional_code"] == "GP")
     bases = {item["base_code"]: item for item in gp["bases"]}
 
-    assert payload["total_responses"] is None
-    assert gp["response_count"] is None
+    assert payload["total_responses"] == 6
+    assert gp["response_count"] == 6
     assert bases["ANA"]["response_count"] == 5
-    assert bases["BSB"]["response_count"] is None
+    assert bases["BSB"]["response_count"] == 1
 
 
-def test_mismatched_base_regional_pair_suppresses_affected_groups(monkeypatch):
+def test_operational_counts_remain_visible_for_stored_base_codes_with_historical_pairs(monkeypatch):
     configure_request(
         monkeypatch,
         total=6,
@@ -347,13 +434,13 @@ def test_mismatched_base_regional_pair_suppresses_affected_groups(monkeypatch):
     payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
     by_code = {item["regional_code"]: item for item in payload["regionals"]}
 
-    assert payload["total_responses"] is None
-    assert by_code["PR"]["response_count"] is None
-    assert by_code["SR"]["response_count"] is None
-    assert next(base for base in by_code["SR"]["bases"] if base["base_code"] == "BNU")["response_count"] is None
+    assert payload["total_responses"] == 6
+    assert by_code["PR"]["response_count"] == 6
+    assert by_code["SR"]["response_count"] == 0
+    assert next(base for base in by_code["SR"]["bases"] if base["base_code"] == "BNU")["response_count"] == 6
 
 
-def test_incomplete_segment_pair_hides_related_counts_and_global_total(monkeypatch):
+def test_missing_base_segment_does_not_hide_global_or_regional_operational_counts(monkeypatch):
     configure_request(
         monkeypatch,
         total=6,
@@ -364,8 +451,8 @@ def test_incomplete_segment_pair_hides_related_counts_and_global_total(monkeypat
     payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
     gp = next(item for item in payload["regionals"] if item["regional_code"] == "GP")
 
-    assert payload["total_responses"] is None
-    assert gp["response_count"] is None
+    assert payload["total_responses"] == 6
+    assert gp["response_count"] == 6
     assert all(base["response_count"] == 0 for base in gp["bases"])
 
 
@@ -394,12 +481,21 @@ def test_collaborator_cannot_export_adherence(monkeypatch, access_type):
     assert response.json() == {"detail": "MANAGEMENT_ACCESS_REQUIRED"}
 
 
-def test_export_is_a_valid_localized_xlsx_with_api_consistent_suppressed_values(monkeypatch):
+@pytest.mark.parametrize("total", [0, 1, 2, 3, 4, 5])
+def test_export_is_a_valid_localized_xlsx_with_exact_api_consistent_values(monkeypatch, total):
+    paired_rows = []
+    if total:
+        first_base_count = total // 2
+        second_base_count = total - first_base_count
+        if first_base_count:
+            paired_rows.append(("GP", "ANA", first_base_count))
+        if second_base_count:
+            paired_rows.append(("GP", "BSB", second_base_count))
     configure_request(
         monkeypatch,
-        total=10,
-        regional_rows=[("GP", 10)],
-        paired_rows=[("GP", "ANA", 8), ("GP", "BSB", 2)],
+        total=total,
+        regional_rows=[("GP", total)] if total else [],
+        paired_rows=paired_rows,
     )
     api_payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
     response = client.get(
@@ -424,10 +520,7 @@ def test_export_is_a_valid_localized_xlsx_with_api_consistent_suppressed_values(
         for row in range(2, 12)
     }
     for regional_name, regional in api_regionals.items():
-        expected = regional["response_count"]
-        assert exported_regionals[regional_name] == (
-            expected if expected is not None else "受保护的数据"
-        )
+        assert exported_regionals[regional_name] == regional["response_count"]
 
     exported_bases = {
         (base_sheet.cell(row, 1).value, base_sheet.cell(row, 2).value): base_sheet.cell(row, 4).value
@@ -436,10 +529,9 @@ def test_export_is_a_valid_localized_xlsx_with_api_consistent_suppressed_values(
     for regional in api_payload["regionals"]:
         for base in regional["bases"]:
             key = (regional["regional_name"], base["base_code"])
-            expected = base["response_count"]
-            assert exported_bases[key] == (
-                expected if expected is not None else "受保护的数据"
-            )
+            assert exported_bases[key] == base["response_count"]
+    assert api_payload["total_responses"] == total
+    assert exported_regionals["GP"] == total
     assert any(
         isinstance(cell.value, str) and "UTC" in cell.value
         for row in regional_sheet.iter_rows()

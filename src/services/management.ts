@@ -20,9 +20,9 @@ export type ManagementOverviewResponse = {
   survey_code: string;
   survey_status: string;
   min_group_size: number;
-  completed_participations: number | null;
-  anonymous_response_count: number | null;
-  respondent_count: number | null;
+  completed_participations: number;
+  anonymous_response_count: number;
+  respondent_count: number;
   analytics_available: boolean;
   nps: number | null;
   invited_count: number | null;
@@ -97,14 +97,14 @@ export type ManagementVoiceResponse = {
 export type ManagementAdherenceBase = {
   base_code: string;
   base_name: string;
-  response_count: number | null;
+  response_count: number;
   analytics_available: boolean;
 };
 
 export type ManagementAdherenceRegional = {
   regional_code: string;
   regional_name: string;
-  response_count: number | null;
+  response_count: number;
   analytics_available: boolean;
   base_count: number;
   bases: ManagementAdherenceBase[];
@@ -117,7 +117,7 @@ export type ManagementAdherenceResponse = {
   total_regionals: number;
   total_bases: number;
   regionals_with_results: number;
-  total_responses: number | null;
+  total_responses: number;
   regionals: ManagementAdherenceRegional[];
 };
 

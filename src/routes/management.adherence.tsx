@@ -110,12 +110,8 @@ function ManagementAdherence() {
           <section className="management-metrics" aria-label={t("management.adherenceMetricsAria")}>
             <MetricCard
               label={t("management.formsCompleted")}
-              value={data.total_responses === null
-                ? t("management.insufficient")
-                : formatInteger.format(data.total_responses)}
-              detail={data.total_responses === null
-                ? t("management.adherenceTotalSuppressed")
-                : t("management.adherenceTotalDetail")}
+              value={formatInteger.format(data.total_responses)}
+              detail={t("management.adherenceTotalDetail")}
             />
             <MetricCard
               label={t("management.totalRegionals")}

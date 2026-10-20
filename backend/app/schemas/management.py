@@ -7,9 +7,9 @@ class ManagementSurveyOverviewResponse(BaseModel):
     survey_code: str
     survey_status: str
     min_group_size: int
-    completed_participations: int | None
-    anonymous_response_count: int | None
-    respondent_count: int | None
+    completed_participations: int
+    anonymous_response_count: int
+    respondent_count: int
     analytics_available: bool
     nps: float | None
     invited_count: int | None
@@ -118,7 +118,7 @@ class ManagementAdherenceBase(BaseModel):
 
     base_code: str
     base_name: str
-    response_count: int | None
+    response_count: int
     analytics_available: bool
 
 
@@ -127,7 +127,7 @@ class ManagementAdherenceRegional(BaseModel):
 
     regional_code: str
     regional_name: str
-    response_count: int | None
+    response_count: int
     analytics_available: bool
     base_count: int
     bases: list[ManagementAdherenceBase]
@@ -142,5 +142,5 @@ class ManagementSurveyAdherenceResponse(BaseModel):
     total_regionals: int
     total_bases: int
     regionals_with_results: int
-    total_responses: int | None
+    total_responses: int
     regionals: list[ManagementAdherenceRegional]
