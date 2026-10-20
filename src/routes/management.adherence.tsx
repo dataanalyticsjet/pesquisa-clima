@@ -5,7 +5,7 @@ import { ManagementLayout, ManagementPageTitle } from "../components/management/
 import { MetricCard } from "../components/management/MetricCard";
 import { ApiError } from "../lib/api";
 import { useI18n } from "../i18n/context";
-import { getManagementAdherence, type ManagementAdherenceResponse } from "../services/management";
+import { downloadManagementAdherence, getManagementAdherence, type ManagementAdherenceResponse } from "../services/management";
 import type { TranslationKey } from "../i18n/catalog";
 
 export const Route = createFileRoute("/management/adherence")({ component: ManagementAdherence });
@@ -30,7 +30,43 @@ function ManagementAdherence() {
   const [data, setData] = useState<ManagementAdherenceResponse | null>(null);
   const [error, setError] = useState<TranslationKey | "">("");
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<TranslationKey | "">("");
+  const [exportComplete, setExportComplete] = useState(false);
   const formatInteger = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "pt-BR");
+
+  async function handleExport() {
+    setExportError("");
+    setExportComplete(false);
+    setExporting(true);
+    try {
+      const { blob, filename } = await downloadManagementAdherence(surveyCode, locale);
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1_000);
+      setExportComplete(true);
+    } catch (reason: unknown) {
+      if (reason instanceof ApiError && reason.status === 401) {
+        void navigate({ to: "/login", replace: true });
+        return;
+      }
+      if (reason instanceof ApiError) {
+        if (reason.status === 403) setExportError("management.adherenceForbidden");
+        else if (reason.status === 404) setExportError("management.surveyNotFound");
+        else if (reason.status === 0) setExportError("management.connectionError");
+        else setExportError("management.adherenceExportError");
+      } else {
+        setExportError("management.adherenceExportError");
+      }
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -51,6 +87,15 @@ function ManagementAdherence() {
   return (
     <ManagementLayout>
       <ManagementPageTitle title={t("management.adherenceTitle")} description={t("management.adherenceDescription")} />
+      {!loading && data && (
+        <div className="adherence-toolbar">
+          <button className="adherence-export" type="button" onClick={() => void handleExport()} disabled={exporting}>
+            {exporting ? t("management.adherenceExporting") : t("management.adherenceExport")}
+          </button>
+          {exportError && <p className="adherence-export__message adherence-export__message--error" role="alert">{t(exportError)}</p>}
+          {exportComplete && <p className="adherence-export__message" role="status">{t("management.adherenceExportComplete")}</p>}
+        </div>
+      )}
       {loading && (
         <div className="management-pillars-state" role="status" aria-live="polite">
           <span className="management-pillars-state__spinner" aria-hidden="true" />
@@ -62,7 +107,7 @@ function ManagementAdherence() {
       )}
       {!loading && data && (
         <>
-          <section className="management-metrics management-metrics--three" aria-label={t("management.adherenceMetricsAria")}>
+          <section className="management-metrics" aria-label={t("management.adherenceMetricsAria")}>
             <MetricCard
               label={t("management.formsCompleted")}
               value={data.total_responses === null
@@ -75,6 +120,10 @@ function ManagementAdherence() {
             <MetricCard
               label={t("management.totalRegionals")}
               value={formatInteger.format(data.total_regionals)}
+            />
+            <MetricCard
+              label={t("management.totalBases")}
+              value={formatInteger.format(data.total_bases)}
             />
             <MetricCard
               label={t("management.regionalsWithResults")}

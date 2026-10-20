@@ -55,7 +55,18 @@ QUESTION_DEFINITIONS = [
 ]
 
 
-def configure_service(monkeypatch, *, current_survey=None, group_counts=(), score_counts=(), question_counts=(), questions=None, catalog=None):
+def configure_service(
+    monkeypatch,
+    *,
+    current_survey=None,
+    group_counts=(),
+    score_counts=(),
+    question_counts=(),
+    questions=None,
+    catalog=None,
+    form_total=0,
+    form_pairs=(),
+):
     monkeypatch.setattr(
         management_repository, "get_survey_by_code", lambda _db, _code: current_survey or survey()
     )
@@ -78,6 +89,16 @@ def configure_service(monkeypatch, *, current_survey=None, group_counts=(), scor
         management_repository,
         "get_attention_question_respondent_counts",
         lambda _db, _survey_id: list(question_counts),
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "count_anonymous_responses",
+        lambda _db, _survey_id: form_total,
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional_and_base",
+        lambda _db, _survey_id: list(form_pairs),
     )
     if catalog is not None:
         monkeypatch.setattr(organization_catalog_service, "get_regional_sc_catalog", lambda: tuple(catalog))
@@ -130,6 +151,22 @@ def test_catalog_formats_display_name_and_does_not_invent_cnpj():
     assert aju.display_name == "AJU — SE - ARACAJU"
     assert all("cnpj" not in sc.__dict__ for regional in REGIONAL_SC_CATALOG for sc in regional.service_centers)
     assert OrganizationCatalogService().validate_selection("ORG_CNPJ", "invented") is False
+
+
+def test_attention_hides_regional_count_when_a_base_count_is_suppressed(monkeypatch):
+    payload = configure_service(
+        monkeypatch,
+        form_total=10,
+        form_pairs=[("GP", "ANA", 8), ("GP", "BSB", 2)],
+        group_counts=[("REGIONAL", "GP", 10), ("BASE", "ANA", 8), ("BASE", "BSB", 2)],
+        question_counts=[("REGIONAL", "GP", 44, 10)],
+    )
+
+    gp = find_regional(payload, "GP")
+    assert gp["respondent_count"] is None
+    assert gp["questions"][0]["respondent_count"] is None
+    assert find_sc(gp, "ANA")["respondent_count"] == 8
+    assert find_sc(gp, "BSB")["respondent_count"] is None
 
 
 @pytest.mark.parametrize(

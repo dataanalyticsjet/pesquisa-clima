@@ -1,5 +1,6 @@
 import logging
 from collections import Counter
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
@@ -14,30 +15,94 @@ class ManagementSurveyNotFoundError(Exception):
     pass
 
 
-def _regional_response_distribution(
-    session: Session, survey_id: int, minimum: int
-) -> tuple[int, Counter[str], bool]:
-    total_responses = management_repository.count_anonymous_responses(session, survey_id)
-    regional_counts: Counter[str] = Counter()
-    for regional_code, response_count in management_repository.get_anonymous_response_counts_by_regional(
-        session, survey_id
-    ):
-        regional_counts[regional_code] += response_count
+@dataclass(frozen=True)
+class _OrganizationResponseDistribution:
+    total_responses: int
+    regional_counts: Counter[str]
+    base_counts: Counter[tuple[str, str]]
+    unsafe_regionals: frozenset[str]
+    unsafe_bases: frozenset[tuple[str, str]]
+    total_is_safe: bool
 
-    official_codes = {
-        regional.code for regional in organization_catalog_service.get_regional_sc_catalog()
-    }
-    assigned_count = sum(regional_counts.values())
-    has_unknown_regional = any(code not in official_codes for code in regional_counts)
-    has_small_regional = any(
-        0 < regional_counts.get(code, 0) < minimum for code in official_codes
-    )
+
+def _organization_response_distribution(
+    session: Session, survey_id: int, minimum: int
+) -> _OrganizationResponseDistribution:
+    """Aggregate paired organizational segments and apply complementary suppression."""
+    total_responses = management_repository.count_anonymous_responses(session, survey_id)
+    catalog = organization_catalog_service.get_regional_sc_catalog()
+    official_regionals = {regional.code for regional in catalog}
+    owners_by_base: dict[str, set[str]] = {}
+    for regional in catalog:
+        for service_center in regional.service_centers:
+            owners_by_base.setdefault(service_center.code, set()).add(regional.code)
+
+    regional_counts: Counter[str] = Counter()
+    base_counts: Counter[tuple[str, str]] = Counter()
+    unsafe_regionals: set[str] = set()
+    unsafe_bases: set[tuple[str, str]] = set()
+    mapped_count = 0
+    mappings_are_valid = True
+
+    for regional_code, base_code, response_count in (
+        management_repository.get_anonymous_response_counts_by_regional_and_base(
+            session, survey_id
+        )
+    ):
+        mapped_count += response_count
+        regional_is_known = regional_code in official_regionals
+        if regional_is_known:
+            regional_counts[regional_code] += response_count
+        else:
+            mappings_are_valid = False
+
+        owners = owners_by_base.get(base_code, set()) if base_code is not None else set()
+        if len(owners) != 1:
+            mappings_are_valid = False
+            if regional_is_known:
+                unsafe_regionals.add(regional_code)
+            for owner in owners:
+                unsafe_regionals.add(owner)
+                unsafe_bases.add((owner, base_code))
+            continue
+
+        base_owner = next(iter(owners))
+        if regional_code != base_owner:
+            mappings_are_valid = False
+            unsafe_regionals.add(base_owner)
+            unsafe_bases.add((base_owner, base_code))
+            if regional_is_known:
+                unsafe_regionals.add(regional_code)
+            continue
+
+        base_counts[(base_owner, base_code)] += response_count
+
+    for regional in catalog:
+        regional_count = regional_counts.get(regional.code, 0)
+        if 0 < regional_count < minimum:
+            unsafe_regionals.add(regional.code)
+        for service_center in regional.service_centers:
+            key = (regional.code, service_center.code)
+            base_count = base_counts.get(key, 0)
+            if 0 < base_count < minimum:
+                unsafe_bases.add(key)
+                unsafe_regionals.add(regional.code)
+
     total_is_safe = (
-        assigned_count == total_responses
-        and not has_unknown_regional
-        and not has_small_regional
+        mapped_count == total_responses
+        and mappings_are_valid
+        and not unsafe_regionals
+        and not unsafe_bases
+        and not 0 < total_responses < minimum
     )
-    return total_responses, regional_counts, total_is_safe
+    return _OrganizationResponseDistribution(
+        total_responses=total_responses,
+        regional_counts=regional_counts,
+        base_counts=base_counts,
+        unsafe_regionals=frozenset(unsafe_regionals),
+        unsafe_bases=frozenset(unsafe_bases),
+        total_is_safe=total_is_safe,
+    )
 
 
 def _calculate_nps(score_counts: list[tuple[int, int]]) -> tuple[float | None, int]:
@@ -57,9 +122,11 @@ def get_survey_overview(session: Session, survey_code: str) -> dict[str, object]
         raise ManagementSurveyNotFoundError
 
     completed_participations = management_repository.count_completed_participations(session, survey.id)
-    anonymous_response_count, _regional_counts, total_is_safe = _regional_response_distribution(
+    distribution = _organization_response_distribution(
         session, survey.id, int(survey.min_group_size)
     )
+    anonymous_response_count = distribution.total_responses
+    total_is_safe = distribution.total_is_safe
     respondent_count = anonymous_response_count
     min_group_size = survey.min_group_size
     analytics_available = respondent_count >= min_group_size
@@ -118,9 +185,11 @@ def get_survey_pillars(session: Session, survey_code: str) -> dict[str, object]:
     definitions = management_repository.get_pillar_definitions(session, survey.id)
     answer_score_counts = management_repository.get_pillar_answer_score_counts(session, survey.id)
     respondent_counts = dict(management_repository.get_pillar_respondent_counts(session, survey.id))
-    total_responses, _regional_counts, total_is_safe = _regional_response_distribution(
+    distribution = _organization_response_distribution(
         session, survey.id, int(survey.min_group_size)
     )
+    total_responses = distribution.total_responses
+    total_is_safe = distribution.total_is_safe
     pillar_counts_are_consistent = all(count <= total_responses for count in respondent_counts.values())
     publish_respondent_counts = total_is_safe and pillar_counts_are_consistent
 
@@ -178,46 +247,76 @@ def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object
         raise ManagementSurveyNotFoundError
 
     minimum = int(survey.min_group_size)
-    total_responses, counts_by_regional, total_is_safe = _regional_response_distribution(
-        session, survey.id, minimum
-    )
+    distribution = _organization_response_distribution(session, survey.id, minimum)
+    total_responses = distribution.total_responses
+    counts_by_regional = distribution.regional_counts
     catalog = organization_catalog_service.get_regional_sc_catalog()
-    regionals = [
-        {
-            "regional_code": regional.code,
-            "response_count": (
-                counts_by_regional.get(regional.code, 0)
-                if counts_by_regional.get(regional.code, 0) == 0
-                or counts_by_regional.get(regional.code, 0) >= minimum
-                else None
-            ),
-            "analytics_available": counts_by_regional.get(regional.code, 0) >= minimum,
-        }
-        for regional in catalog
-    ]
-    catalog_position = {regional.code: index for index, regional in enumerate(catalog)}
+    regionals = []
+    for regional in catalog:
+        raw_regional_count = counts_by_regional.get(regional.code, 0)
+        regional_is_safe = (
+            regional.code not in distribution.unsafe_regionals
+            and (raw_regional_count == 0 or raw_regional_count >= minimum)
+        )
+        regional_count = raw_regional_count if regional_is_safe else None
+        bases = []
+        for service_center in regional.service_centers:
+            key = (regional.code, service_center.code)
+            raw_base_count = distribution.base_counts.get(key, 0)
+            base_is_safe = (
+                key not in distribution.unsafe_bases
+                and (raw_base_count == 0 or raw_base_count >= minimum)
+            )
+            bases.append(
+                {
+                    "base_code": service_center.code,
+                    "base_name": service_center.display_name_override or service_center.name,
+                    "response_count": raw_base_count if base_is_safe else None,
+                    "analytics_available": base_is_safe and raw_base_count >= minimum,
+                }
+            )
+        bases.sort(
+            key=lambda item: (
+                0 if item["analytics_available"] else 1 if item["response_count"] is None else 2,
+                -int(item["response_count"] or 0) if item["analytics_available"] else 0,
+                next(
+                    index
+                    for index, service_center in enumerate(regional.service_centers)
+                    if service_center.code == item["base_code"]
+                ),
+            )
+        )
+        regionals.append(
+            {
+                "regional_code": regional.code,
+                "regional_name": regional.display_name or regional.code,
+                "response_count": regional_count,
+                "analytics_available": (
+                    regional_count is not None and raw_regional_count >= minimum
+                ),
+                "base_count": len(regional.service_centers),
+                "bases": bases,
+            }
+        )
+
     regionals.sort(
         key=lambda item: (
-            0
-            if counts_by_regional.get(item["regional_code"], 0) >= minimum
-            else 1
-            if counts_by_regional.get(item["regional_code"], 0) > 0
-            else 2,
-            -counts_by_regional.get(item["regional_code"], 0)
-            if counts_by_regional.get(item["regional_code"], 0) >= minimum
-            else 0,
-            catalog_position[item["regional_code"]],
+            0 if item["analytics_available"] else 1 if item["response_count"] is None else 2,
+            -int(item["response_count"] or 0) if item["analytics_available"] else 0,
+            next(index for index, regional in enumerate(catalog) if regional.code == item["regional_code"]),
         )
     )
+    total_bases = sum(len(regional.service_centers) for regional in catalog)
     result = {
         "survey_code": survey.code,
         "survey_status": survey.status,
         "min_group_size": minimum,
         "total_regionals": len(catalog),
+        "total_bases": total_bases,
         "regionals_with_results": sum(
-            counts_by_regional.get(regional.code, 0) >= minimum for regional in catalog
+            regional["analytics_available"] for regional in regionals
         ),
-        "total_responses": total_responses if total_is_safe else None,
+        "total_responses": total_responses if distribution.total_is_safe else None,
         "regionals": regionals,
     }
     logger.info("management adherence analytics generated")
@@ -247,6 +346,9 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
         raise ManagementSurveyNotFoundError
 
     minimum = int(survey.min_group_size)
+    organization_distribution = _organization_response_distribution(
+        session, survey.id, minimum
+    )
     questions = management_repository.get_attention_question_definitions(session, survey.id)
     group_respondent_counts = {
         (segment_type, segment_code): count
@@ -280,7 +382,12 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
         for question_id, code, text, position in questions
     ]
 
-    def group_analysis(segment_type: str, segment_code: str) -> tuple[dict[str, object], int]:
+    def group_analysis(
+        segment_type: str,
+        segment_code: str,
+        *,
+        suppress_counts: bool = False,
+    ) -> tuple[dict[str, object], int]:
         raw_group_respondents = group_respondent_counts.get((segment_type, segment_code), 0)
         valid_answer_total = 0
         attention_answer_total = 0
@@ -304,7 +411,11 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
                     "question_text": question["text"],
                     "analytics_available": question_available,
                     "attention_rate": question_rate,
-                    "respondent_count": _privacy_safe_count(raw_question_respondents, minimum),
+                    "respondent_count": (
+                        None
+                        if suppress_counts
+                        else _privacy_safe_count(raw_question_respondents, minimum)
+                    ),
                 },
                 int(question["position"]),
                 raw_question_respondents,
@@ -328,7 +439,11 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
             {
                 "attention_rate": group_rate,
                 "analytics_available": group_available,
-                "respondent_count": _privacy_safe_count(raw_group_respondents, minimum),
+                "respondent_count": (
+                    None
+                    if suppress_counts
+                    else _privacy_safe_count(raw_group_respondents, minimum)
+                ),
                 "questions": [row[0] for row in question_rows],
             },
             raw_group_respondents,
@@ -336,10 +451,19 @@ def get_survey_attention(session: Session, survey_code: str) -> dict[str, object
 
     regional_rows: list[tuple[dict[str, object], int, int]] = []
     for regional_position, regional in enumerate(organization_catalog_service.get_regional_sc_catalog()):
-        regional_analysis, regional_raw_count = group_analysis("REGIONAL", regional.code)
+        regional_analysis, regional_raw_count = group_analysis(
+            "REGIONAL",
+            regional.code,
+            suppress_counts=regional.code in organization_distribution.unsafe_regionals,
+        )
         sc_rows: list[tuple[dict[str, object], int, int]] = []
         for sc_position, service_center in enumerate(regional.service_centers):
-            sc_analysis, sc_raw_count = group_analysis("BASE", service_center.code)
+            sc_analysis, sc_raw_count = group_analysis(
+                "BASE",
+                service_center.code,
+                suppress_counts=(regional.code, service_center.code)
+                in organization_distribution.unsafe_bases,
+            )
             sc_rows.append((
                 {
                     "sc_code": service_center.code,

@@ -1,4 +1,4 @@
-import { apiRequest } from "../lib/api";
+import { ApiError, apiRequest, apiUrl } from "../lib/api";
 
 export type ManagementPillar = {
   code: string;
@@ -94,10 +94,20 @@ export type ManagementVoiceResponse = {
   questions: (ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion)[];
 };
 
-export type ManagementAdherenceRegional = {
-  regional_code: string;
+export type ManagementAdherenceBase = {
+  base_code: string;
+  base_name: string;
   response_count: number | null;
   analytics_available: boolean;
+};
+
+export type ManagementAdherenceRegional = {
+  regional_code: string;
+  regional_name: string;
+  response_count: number | null;
+  analytics_available: boolean;
+  base_count: number;
+  bases: ManagementAdherenceBase[];
 };
 
 export type ManagementAdherenceResponse = {
@@ -105,6 +115,7 @@ export type ManagementAdherenceResponse = {
   survey_status: string;
   min_group_size: number;
   total_regionals: number;
+  total_bases: number;
   regionals_with_results: number;
   total_responses: number | null;
   regionals: ManagementAdherenceRegional[];
@@ -138,4 +149,29 @@ export function getManagementAdherence(surveyCode: string) {
   return apiRequest<ManagementAdherenceResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/adherence`,
   );
+}
+
+export async function downloadManagementAdherence(surveyCode: string, locale: "pt" | "zh") {
+  let response: Response;
+  try {
+    response = await fetch(
+      apiUrl(`/api/management/surveys/${encodeURIComponent(surveyCode)}/adherence/export?locale=${locale}`),
+      { credentials: "include" },
+    );
+  } catch {
+    throw new ApiError(0, "NETWORK_ERROR");
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { detail?: unknown } | undefined;
+    throw new ApiError(
+      response.status,
+      typeof body?.detail === "string" ? body.detail : undefined,
+    );
+  }
+
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename = disposition.match(/filename="([^"]+)"/i)?.[1]
+    ?? `adherence-${surveyCode}.xlsx`;
+  return { blob: await response.blob(), filename };
 }

@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_db_session, require_management_access
@@ -19,6 +22,7 @@ from app.services.management_service import (
     get_survey_pillars,
     get_survey_voice,
 )
+from app.services.management_export import build_adherence_workbook
 
 
 router = APIRouter(prefix="/api/management/surveys", tags=["management"])
@@ -52,6 +56,26 @@ def read_survey_adherence(
         return get_survey_adherence(session, survey_code)
     except ManagementSurveyNotFoundError:
         raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
+
+
+@router.get("/{survey_code}/adherence/export")
+def export_survey_adherence(
+    survey_code: SurveyCodePath,
+    locale: Literal["pt", "zh"] = Query(default="pt"),
+    _user: User = Depends(require_management_access),
+    session: Session = Depends(get_db_session),
+):
+    try:
+        payload = get_survey_adherence(session, survey_code)
+    except ManagementSurveyNotFoundError:
+        raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
+
+    workbook = build_adherence_workbook(payload, locale)
+    return Response(
+        content=workbook,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="adherence-{survey_code}.xlsx"'},
+    )
 
 
 @router.get(

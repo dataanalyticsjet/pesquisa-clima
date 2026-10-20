@@ -113,12 +113,24 @@ class ManagementSurveyVoiceResponse(BaseModel):
     questions: list[ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion]
 
 
+class ManagementAdherenceBase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    base_code: str
+    base_name: str
+    response_count: int | None
+    analytics_available: bool
+
+
 class ManagementAdherenceRegional(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     regional_code: str
+    regional_name: str
     response_count: int | None
     analytics_available: bool
+    base_count: int
+    bases: list[ManagementAdherenceBase]
 
 
 class ManagementSurveyAdherenceResponse(BaseModel):
@@ -128,6 +140,7 @@ class ManagementSurveyAdherenceResponse(BaseModel):
     survey_status: str
     min_group_size: int
     total_regionals: int
+    total_bases: int
     regionals_with_results: int
     total_responses: int | None
     regionals: list[ManagementAdherenceRegional]

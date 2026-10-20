@@ -6,3 +6,4 @@ pymysql
 pytest
 httpx
 itsdangerous
+openpyxl==3.1.5

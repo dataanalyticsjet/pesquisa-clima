@@ -1,5 +1,5 @@
 from sqlalchemy import and_, distinct, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.models.anonymous_responses import (
     AnonymousResponse,
@@ -59,6 +59,46 @@ def get_anonymous_response_counts_by_regional(
     return [
         (str(regional_code), int(response_count))
         for regional_code, response_count in session.execute(statement).all()
+    ]
+
+
+def get_anonymous_response_counts_by_regional_and_base(
+    session: Session, survey_id: int
+) -> list[tuple[str | None, str | None, int]]:
+    """Aggregate distinct anonymous forms by their paired Regional and Base segments."""
+    regional_segment = aliased(AnonymousResponseSegment)
+    base_segment = aliased(AnonymousResponseSegment)
+    statement = (
+        select(
+            regional_segment.segment_code,
+            base_segment.segment_code,
+            func.count(distinct(AnonymousResponse.response_id)),
+        )
+        .select_from(AnonymousResponse)
+        .outerjoin(
+            regional_segment,
+            and_(
+                regional_segment.response_id == AnonymousResponse.response_id,
+                regional_segment.segment_type == "REGIONAL",
+            ),
+        )
+        .outerjoin(
+            base_segment,
+            and_(
+                base_segment.response_id == AnonymousResponse.response_id,
+                base_segment.segment_type == "BASE",
+            ),
+        )
+        .where(AnonymousResponse.survey_id == survey_id)
+        .group_by(regional_segment.segment_code, base_segment.segment_code)
+    )
+    return [
+        (
+            str(regional_code) if regional_code is not None else None,
+            str(base_code) if base_code is not None else None,
+            int(response_count),
+        )
+        for regional_code, base_code, response_count in session.execute(statement).all()
     ]
 
 
