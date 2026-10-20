@@ -29,11 +29,37 @@ def count_completed_participations(session: Session, survey_id: int) -> int:
 
 def count_anonymous_responses(session: Session, survey_id: int) -> int:
     statement = (
-        select(func.count())
+        select(func.count(distinct(AnonymousResponse.response_id)))
         .select_from(AnonymousResponse)
         .where(AnonymousResponse.survey_id == survey_id)
     )
     return int(session.scalar(statement) or 0)
+
+
+def get_anonymous_response_counts_by_regional(
+    session: Session, survey_id: int
+) -> list[tuple[str, int]]:
+    """Count distinct anonymous forms by the stored official Regional segment."""
+    statement = (
+        select(
+            AnonymousResponseSegment.segment_code,
+            func.count(distinct(AnonymousResponseSegment.response_id)),
+        )
+        .select_from(AnonymousResponseSegment)
+        .join(
+            AnonymousResponse,
+            AnonymousResponse.response_id == AnonymousResponseSegment.response_id,
+        )
+        .where(
+            AnonymousResponse.survey_id == survey_id,
+            AnonymousResponseSegment.segment_type == "REGIONAL",
+        )
+        .group_by(AnonymousResponseSegment.segment_code)
+    )
+    return [
+        (str(regional_code), int(response_count))
+        for regional_code, response_count in session.execute(statement).all()
+    ]
 
 
 def get_q39_score_counts(session: Session, survey_id: int) -> list[tuple[int, int]]:

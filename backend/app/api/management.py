@@ -5,6 +5,7 @@ from app.core.auth import get_db_session, require_management_access
 from app.api.params import SurveyCodePath
 from app.models.identity import User
 from app.schemas.management import (
+    ManagementSurveyAdherenceResponse,
     ManagementSurveyAttentionResponse,
     ManagementSurveyOverviewResponse,
     ManagementSurveyPillarsResponse,
@@ -13,6 +14,7 @@ from app.schemas.management import (
 from app.services.management_service import (
     ManagementSurveyNotFoundError,
     get_survey_attention,
+    get_survey_adherence,
     get_survey_overview,
     get_survey_pillars,
     get_survey_voice,
@@ -33,6 +35,21 @@ def read_survey_voice(
 ):
     try:
         return get_survey_voice(session, survey_code)
+    except ManagementSurveyNotFoundError:
+        raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
+
+
+@router.get(
+    "/{survey_code}/adherence",
+    response_model=ManagementSurveyAdherenceResponse,
+)
+def read_survey_adherence(
+    survey_code: SurveyCodePath,
+    _user: User = Depends(require_management_access),
+    session: Session = Depends(get_db_session),
+):
+    try:
+        return get_survey_adherence(session, survey_code)
     except ManagementSurveyNotFoundError:
         raise HTTPException(status_code=404, detail="SURVEY_NOT_FOUND") from None
 

@@ -47,6 +47,7 @@ def configure_management_request(monkeypatch, *, roles=("ADMIN",), user=None, su
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, survey_id: 0)
     monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, survey_id: 0)
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, survey_id: [])
     monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, survey_id: [])
     return session
 
@@ -171,14 +172,53 @@ def test_service_uses_anonymous_response_count_for_privacy_and_keeps_counts_sepa
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: calls.append(("participation", sid)) or 2)
     monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: calls.append(("anonymous", sid)) or 3)
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, sid: [])
     monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: pytest.fail("NPS must be suppressed"))
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
     assert calls == [("participation", 301), ("anonymous", 301)]
-    assert result["completed_participations"] == 2
-    assert result["anonymous_response_count"] == 3
-    assert result["respondent_count"] == 3
+    assert result["completed_participations"] is None
+    assert result["anonymous_response_count"] is None
+    assert result["respondent_count"] is None
+
+
+def test_overview_hides_global_counts_when_a_regional_group_is_suppressed(monkeypatch):
+    survey = set_survey(min_group_size=5)
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 7)
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 7)
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional",
+        lambda db, sid: [("GP", 5), ("CE", 2)],
+    )
+    monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(9, 7)])
+
+    result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
+
+    assert result["completed_participations"] is None
+    assert result["anonymous_response_count"] is None
+    assert result["respondent_count"] is None
+    assert result["nps"] == 100
+
+
+def test_overview_never_publishes_a_participation_count_below_the_minimum(monkeypatch):
+    survey = set_survey(min_group_size=5)
+    monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
+    monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 4)
+    monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 5)
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional",
+        lambda db, sid: [("CE", 5)],
+    )
+    monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(9, 5)])
+
+    result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
+
+    assert result["completed_participations"] is None
+    assert result["anonymous_response_count"] == 5
 
 
 def test_nps_is_suppressed_below_min_group_size(monkeypatch):
@@ -186,13 +226,14 @@ def test_nps_is_suppressed_below_min_group_size(monkeypatch):
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 4)
     monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 4)
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, sid: [("CE", 4)])
     monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: pytest.fail("NPS must be suppressed"))
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
     assert result["analytics_available"] is False
     assert result["nps"] is None
-    assert result["respondent_count"] == 4
+    assert result["respondent_count"] is None
 
 
 def test_exactly_min_group_size_allows_nps_calculation(monkeypatch):
@@ -200,12 +241,14 @@ def test_exactly_min_group_size_allows_nps_calculation(monkeypatch):
     monkeypatch.setattr(management_repository, "get_survey_by_code", lambda db, code: survey)
     monkeypatch.setattr(management_repository, "count_completed_participations", lambda db, sid: 5)
     monkeypatch.setattr(management_repository, "count_anonymous_responses", lambda db, sid: 5)
+    monkeypatch.setattr(management_repository, "get_anonymous_response_counts_by_regional", lambda db, sid: [("CE", 5)])
     monkeypatch.setattr(management_repository, "get_q39_score_counts", lambda db, sid: [(0, 1), (7, 3), (10, 1)])
 
     result = management_service.get_survey_overview(FakeSession(), "CLIMATE_2026")
 
     assert result["analytics_available"] is True
     assert result["nps"] == 0
+    assert result["anonymous_response_count"] == 5
 
 
 @pytest.mark.parametrize(
@@ -308,6 +351,8 @@ def configure_pillars_request(
     definitions=None,
     answer_score_counts=(),
     respondent_counts=(),
+    regional_rows=None,
+    anonymous_total=None,
 ):
     session = configure_management_request(
         monkeypatch, roles=roles, user=user, survey=survey or set_survey()
@@ -326,6 +371,25 @@ def configure_pillars_request(
         management_repository,
         "get_pillar_respondent_counts",
         lambda db, survey_id: list(respondent_counts),
+    )
+    distribution_total = (
+        max((count for _, count in respondent_counts), default=0)
+        if anonymous_total is None
+        else anonymous_total
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "count_anonymous_responses",
+        lambda db, survey_id: distribution_total,
+    )
+    monkeypatch.setattr(
+        management_repository,
+        "get_anonymous_response_counts_by_regional",
+        lambda db, survey_id: list(
+            regional_rows
+            if regional_rows is not None
+            else ([ ("CE", distribution_total) ] if distribution_total else [])
+        ),
     )
     return session
 
@@ -516,8 +580,43 @@ def test_pillar_below_minimum_suppresses_index(monkeypatch):
     result = management_service.get_survey_pillars(FakeSession(), "CLIMATE_2026")
     first_pillar = result["pillars"][0]
 
-    assert first_pillar["respondent_count"] == 4
+    assert first_pillar["respondent_count"] is None
     assert first_pillar["analytics_available"] is False
+    assert first_pillar["index"] is None
+
+
+def test_pillar_count_is_hidden_when_it_could_reveal_a_suppressed_regional_count(monkeypatch):
+    configure_pillars_request(
+        monkeypatch,
+        survey=set_survey(min_group_size=5),
+        respondent_counts=[("CONDICOES", 7)],
+        answer_score_counts=[("CONDICOES", 4, 7)],
+        regional_rows=[("GP", 5), ("CE", 2)],
+    )
+
+    result = management_service.get_survey_pillars(FakeSession(), "CLIMATE_2026")
+    first_pillar = result["pillars"][0]
+
+    assert first_pillar["analytics_available"] is True
+    assert first_pillar["index"] == 75.0
+    assert first_pillar["respondent_count"] is None
+
+
+def test_pillar_count_below_minimum_is_hidden_even_when_regional_total_is_safe(monkeypatch):
+    configure_pillars_request(
+        monkeypatch,
+        survey=set_survey(min_group_size=5),
+        respondent_counts=[("CONDICOES", 4)],
+        answer_score_counts=[("CONDICOES", 4, 4)],
+        regional_rows=[("CE", 5)],
+        anonymous_total=5,
+    )
+
+    result = management_service.get_survey_pillars(FakeSession(), "CLIMATE_2026")
+    first_pillar = result["pillars"][0]
+
+    assert first_pillar["analytics_available"] is False
+    assert first_pillar["respondent_count"] is None
     assert first_pillar["index"] is None
 
 

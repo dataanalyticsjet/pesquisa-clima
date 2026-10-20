@@ -14,6 +14,32 @@ class ManagementSurveyNotFoundError(Exception):
     pass
 
 
+def _regional_response_distribution(
+    session: Session, survey_id: int, minimum: int
+) -> tuple[int, Counter[str], bool]:
+    total_responses = management_repository.count_anonymous_responses(session, survey_id)
+    regional_counts: Counter[str] = Counter()
+    for regional_code, response_count in management_repository.get_anonymous_response_counts_by_regional(
+        session, survey_id
+    ):
+        regional_counts[regional_code] += response_count
+
+    official_codes = {
+        regional.code for regional in organization_catalog_service.get_regional_sc_catalog()
+    }
+    assigned_count = sum(regional_counts.values())
+    has_unknown_regional = any(code not in official_codes for code in regional_counts)
+    has_small_regional = any(
+        0 < regional_counts.get(code, 0) < minimum for code in official_codes
+    )
+    total_is_safe = (
+        assigned_count == total_responses
+        and not has_unknown_regional
+        and not has_small_regional
+    )
+    return total_responses, regional_counts, total_is_safe
+
+
 def _calculate_nps(score_counts: list[tuple[int, int]]) -> tuple[float | None, int]:
     detractors = sum(count for score, count in score_counts if 0 <= score <= 6)
     promoters = sum(count for score, count in score_counts if 9 <= score <= 10)
@@ -31,7 +57,9 @@ def get_survey_overview(session: Session, survey_code: str) -> dict[str, object]
         raise ManagementSurveyNotFoundError
 
     completed_participations = management_repository.count_completed_participations(session, survey.id)
-    anonymous_response_count = management_repository.count_anonymous_responses(session, survey.id)
+    anonymous_response_count, _regional_counts, total_is_safe = _regional_response_distribution(
+        session, survey.id, int(survey.min_group_size)
+    )
     respondent_count = anonymous_response_count
     min_group_size = survey.min_group_size
     analytics_available = respondent_count >= min_group_size
@@ -49,9 +77,13 @@ def get_survey_overview(session: Session, survey_code: str) -> dict[str, object]
         "survey_code": survey.code,
         "survey_status": survey.status,
         "min_group_size": min_group_size,
-        "completed_participations": completed_participations,
-        "anonymous_response_count": anonymous_response_count,
-        "respondent_count": respondent_count,
+        "completed_participations": (
+            _privacy_safe_count(completed_participations, int(min_group_size))
+            if total_is_safe
+            else None
+        ),
+        "anonymous_response_count": anonymous_response_count if total_is_safe else None,
+        "respondent_count": respondent_count if total_is_safe else None,
         "analytics_available": analytics_available,
         "nps": nps,
         "invited_count": None,
@@ -86,6 +118,11 @@ def get_survey_pillars(session: Session, survey_code: str) -> dict[str, object]:
     definitions = management_repository.get_pillar_definitions(session, survey.id)
     answer_score_counts = management_repository.get_pillar_answer_score_counts(session, survey.id)
     respondent_counts = dict(management_repository.get_pillar_respondent_counts(session, survey.id))
+    total_responses, _regional_counts, total_is_safe = _regional_response_distribution(
+        session, survey.id, int(survey.min_group_size)
+    )
+    pillar_counts_are_consistent = all(count <= total_responses for count in respondent_counts.values())
+    publish_respondent_counts = total_is_safe and pillar_counts_are_consistent
 
     scores_by_section: dict[str, list[tuple[int | None, int]]] = {}
     invalid_score_found = False
@@ -113,7 +150,12 @@ def get_survey_pillars(session: Session, survey_code: str) -> dict[str, object]:
                 "code": section_code,
                 "title": title,
                 "question_count": question_count,
-                "respondent_count": respondent_count,
+                "respondent_count": (
+                    respondent_count
+                    if publish_respondent_counts
+                    and _privacy_safe_count(respondent_count, int(survey.min_group_size)) is not None
+                    else None
+                ),
                 "analytics_available": analytics_available,
                 "index": pillar_index,
             }
@@ -126,6 +168,60 @@ def get_survey_pillars(session: Session, survey_code: str) -> dict[str, object]:
         "min_group_size": survey.min_group_size,
         "pillars": pillars,
     }
+
+
+def get_survey_adherence(session: Session, survey_code: str) -> dict[str, object]:
+    """Return anonymous form counts by the approved Regional catalog."""
+    logger.info("management adherence analytics requested")
+    survey = management_repository.get_survey_by_code(session, survey_code)
+    if survey is None:
+        raise ManagementSurveyNotFoundError
+
+    minimum = int(survey.min_group_size)
+    total_responses, counts_by_regional, total_is_safe = _regional_response_distribution(
+        session, survey.id, minimum
+    )
+    catalog = organization_catalog_service.get_regional_sc_catalog()
+    regionals = [
+        {
+            "regional_code": regional.code,
+            "response_count": (
+                counts_by_regional.get(regional.code, 0)
+                if counts_by_regional.get(regional.code, 0) == 0
+                or counts_by_regional.get(regional.code, 0) >= minimum
+                else None
+            ),
+            "analytics_available": counts_by_regional.get(regional.code, 0) >= minimum,
+        }
+        for regional in catalog
+    ]
+    catalog_position = {regional.code: index for index, regional in enumerate(catalog)}
+    regionals.sort(
+        key=lambda item: (
+            0
+            if counts_by_regional.get(item["regional_code"], 0) >= minimum
+            else 1
+            if counts_by_regional.get(item["regional_code"], 0) > 0
+            else 2,
+            -counts_by_regional.get(item["regional_code"], 0)
+            if counts_by_regional.get(item["regional_code"], 0) >= minimum
+            else 0,
+            catalog_position[item["regional_code"]],
+        )
+    )
+    result = {
+        "survey_code": survey.code,
+        "survey_status": survey.status,
+        "min_group_size": minimum,
+        "total_regionals": len(catalog),
+        "regionals_with_results": sum(
+            counts_by_regional.get(regional.code, 0) >= minimum for regional in catalog
+        ),
+        "total_responses": total_responses if total_is_safe else None,
+        "regionals": regionals,
+    }
+    logger.info("management adherence analytics generated")
+    return result
 
 
 def _privacy_safe_count(count: int, minimum: int) -> int | None:

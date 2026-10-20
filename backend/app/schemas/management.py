@@ -7,9 +7,9 @@ class ManagementSurveyOverviewResponse(BaseModel):
     survey_code: str
     survey_status: str
     min_group_size: int
-    completed_participations: int
-    anonymous_response_count: int
-    respondent_count: int
+    completed_participations: int | None
+    anonymous_response_count: int | None
+    respondent_count: int | None
     analytics_available: bool
     nps: float | None
     invited_count: int | None
@@ -23,7 +23,7 @@ class ManagementPillarResponse(BaseModel):
     code: str
     title: str
     question_count: int
-    respondent_count: int
+    respondent_count: int | None
     analytics_available: bool
     index: float | None
 
@@ -111,3 +111,23 @@ class ManagementSurveyVoiceResponse(BaseModel):
     survey_status: str
     min_group_size: int
     questions: list[ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion]
+
+
+class ManagementAdherenceRegional(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    regional_code: str
+    response_count: int | None
+    analytics_available: bool
+
+
+class ManagementSurveyAdherenceResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    survey_code: str
+    survey_status: str
+    min_group_size: int
+    total_regionals: int
+    regionals_with_results: int
+    total_responses: int | None
+    regionals: list[ManagementAdherenceRegional]

@@ -4,7 +4,7 @@ export type ManagementPillar = {
   code: string;
   title: string;
   question_count: number;
-  respondent_count: number;
+  respondent_count: number | null;
   analytics_available: boolean;
   index: number | null;
 };
@@ -20,9 +20,9 @@ export type ManagementOverviewResponse = {
   survey_code: string;
   survey_status: string;
   min_group_size: number;
-  completed_participations: number;
-  anonymous_response_count: number;
-  respondent_count: number;
+  completed_participations: number | null;
+  anonymous_response_count: number | null;
+  respondent_count: number | null;
   analytics_available: boolean;
   nps: number | null;
   invited_count: number | null;
@@ -94,6 +94,22 @@ export type ManagementVoiceResponse = {
   questions: (ManagementVoiceCommentsQuestion | ManagementVoiceTermsQuestion)[];
 };
 
+export type ManagementAdherenceRegional = {
+  regional_code: string;
+  response_count: number | null;
+  analytics_available: boolean;
+};
+
+export type ManagementAdherenceResponse = {
+  survey_code: string;
+  survey_status: string;
+  min_group_size: number;
+  total_regionals: number;
+  regionals_with_results: number;
+  total_responses: number | null;
+  regionals: ManagementAdherenceRegional[];
+};
+
 export function getManagementPillars(surveyCode: string) {
   return apiRequest<ManagementPillarsResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/pillars`,
@@ -115,5 +131,11 @@ export function getManagementAttention(surveyCode: string) {
 export function getManagementVoice(surveyCode: string) {
   return apiRequest<ManagementVoiceResponse>(
     `/api/management/surveys/${encodeURIComponent(surveyCode)}/voice`,
+  );
+}
+
+export function getManagementAdherence(surveyCode: string) {
+  return apiRequest<ManagementAdherenceResponse>(
+    `/api/management/surveys/${encodeURIComponent(surveyCode)}/adherence`,
   );
 }

@@ -105,7 +105,7 @@
 }
 
 .management-metrics--three {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .management-metrics--overview {
@@ -515,9 +515,10 @@
 
 .adherence-panel { padding: var(--space-6); }
 .adherence-list { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.adherence-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 48px; align-items: center; gap: var(--space-3); }
+.adherence-row { display: grid; grid-template-columns: minmax(80px, 130px) minmax(0, 1fr) minmax(72px, auto); align-items: center; gap: var(--space-3); }
 .adherence-row__region { color: var(--color-text-primary); font-size: 0.86rem; font-weight: 650; }
 .adherence-row > strong { color: var(--color-text-primary); font-size: 0.84rem; text-align: right; }
+.adherence-row__protected { grid-column: 2 / 4; color: var(--color-text-secondary); font-size: 0.8rem; text-align: right; }
 .adherence-row__track { height: 10px; overflow: hidden; border-radius: 999px; background: var(--color-surface-secondary); }
 .adherence-row__track span { display: block; height: 100%; border-radius: inherit; background: var(--color-brand); }
 .management-privacy-note { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
@@ -546,7 +547,10 @@
   .trend-chart__value { font-size: 22px; }
   .trend-chart__year { font-size: 20px; }
   .adherence-panel { padding: var(--space-4); }
-  .adherence-row { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: var(--space-2); }
+  .adherence-row { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
+  .adherence-row__track { grid-column: 1 / -1; }
+  .adherence-row > strong { grid-row: 1; grid-column: 2; }
+  .adherence-row__protected { grid-column: 2; }
   .management-page-title { align-items: start; }
   .management-attention-regional { padding: var(--space-4); }
   .management-attention-sc__summary { padding: var(--space-3); }

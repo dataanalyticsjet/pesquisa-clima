@@ -1,13 +1,35 @@
-export function AdherenceList({ regions }: { regions: { region: string; adherence: number }[] }) {
+import { useI18n } from "../../i18n/context";
+import type { ManagementAdherenceRegional } from "../../services/management";
+
+export function AdherenceList({ regionals }: { regionals: ManagementAdherenceRegional[] }) {
+  const { locale, t } = useI18n();
+  const formatInteger = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "pt-BR");
+  const maxVisibleCount = Math.max(
+    0,
+    ...regionals.map((regional) => regional.response_count ?? 0),
+  );
+
   return (
     <ul className="adherence-list">
-      {regions.map(({ region, adherence }) => (
-        <li className="adherence-row" key={region}>
-          <span className="adherence-row__region">{region}</span>
-          <div className="adherence-row__track" role="progressbar" aria-label={`Adesão ${region}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={adherence}>
-            <span style={{ width: `${adherence}%` }} />
-          </div>
-          <strong>{adherence}%</strong>
+      {regionals.map(({ regional_code, response_count }) => (
+        <li className="adherence-row" key={regional_code}>
+          <span className="adherence-row__region">{regional_code}</span>
+          {response_count === null ? (
+            <span className="adherence-row__protected" role="status">{t("management.insufficient")}</span>
+          ) : (
+            <>
+              <div className="adherence-row__track" aria-hidden="true">
+                <span
+                  style={{
+                    width: maxVisibleCount === 0
+                      ? "0%"
+                      : `${(response_count / maxVisibleCount) * 100}%`,
+                  }}
+                />
+              </div>
+              <strong>{formatInteger.format(response_count)}</strong>
+            </>
+          )}
         </li>
       ))}
     </ul>

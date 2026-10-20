@@ -75,6 +75,18 @@ function ManagementOverview() {
   const adherenceDetail = data?.adherence_percent === null || !data
     ? t("management.awaitingInvited")
     : t("management.invitedParticipation");
+  const completedValue = data?.completed_participations === null || !data
+    ? t("management.insufficient")
+    : formatInteger.format(data.completed_participations);
+  const completedDetail = data?.completed_participations === null || !data
+    ? t("management.adherenceTotalSuppressed")
+    : t("management.completedDetail");
+  const anonymousValue = data?.anonymous_response_count === null || !data
+    ? t("management.insufficient")
+    : formatInteger.format(data.anonymous_response_count);
+  const anonymousDetail = data?.anonymous_response_count === null || !data
+    ? t("management.adherenceTotalSuppressed")
+    : t("management.anonymousDetail");
   const npsDetail = data && (!data.analytics_available || data.nps === null)
     ? t("management.minimum", { count: data.min_group_size })
     : t("management.npsScale");
@@ -101,8 +113,8 @@ function ManagementOverview() {
             <MetricCard label={t("management.index")} value={t("management.underDefinition")} detail={t("management.indexApiUnavailable")} />
             <MetricCard label={t("management.invited")} value={invitedValue} detail={invitedDetail} />
             <MetricCard label={t("management.adherence")} value={adherenceValue} detail={adherenceDetail} />
-            <MetricCard label={t("management.completed")} value={formatInteger.format(data.completed_participations)} detail={t("management.completedDetail")} />
-            <MetricCard label={t("management.anonymous")} value={formatInteger.format(data.anonymous_response_count)} detail={t("management.anonymousDetail")} />
+            <MetricCard label={t("management.completed")} value={completedValue} detail={completedDetail} />
+            <MetricCard label={t("management.anonymous")} value={anonymousValue} detail={anonymousDetail} />
             <MetricCard label={t("management.nps")} value={getNpsValue(data, t, formatPercent)} detail={npsDetail} />
           </section>
           <p className="management-privacy-note" role="note">
