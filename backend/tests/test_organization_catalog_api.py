@@ -102,6 +102,30 @@ def test_units_keep_exact_official_names_and_codes_are_unique():
                 "name": "PE - Nossa Senhora Aparecida",
                 "display_name": "SNS — PE - Nossa Senhora Aparecida",
             }
+        elif regional["code"] == "MG/SPN":
+            by_code = {unit["code"]: unit for unit in units}
+            assert by_code == {
+                "CGE": {
+                    "code": "CGE",
+                    "name": "MG - Contagem",
+                    "display_name": "CGE — MG - Contagem",
+                },
+                "CVH": {
+                    "code": "CVH",
+                    "name": "MG - Contagem",
+                    "display_name": "CHV — MG - Contagem",
+                },
+                "RAO": {
+                    "code": "RAO",
+                    "name": "SP - Ribeirão Preto",
+                    "display_name": "RAO — SP - Ribeirão Preto",
+                },
+                "RBP": {
+                    "code": "RBP",
+                    "name": "SP - Ribeirão Preto",
+                    "display_name": "RBP — SP - Ribeirão Preto",
+                },
+            }
         elif regional["code"] == "PR":
             assert [unit["code"] for unit in units] == ["SJS"]
         elif regional["code"] == "SR":

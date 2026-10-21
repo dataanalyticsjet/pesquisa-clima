@@ -64,10 +64,10 @@ REGIONAL_SC_CATALOG: tuple[RegionalCatalogEntry, ...] = (
     RegionalCatalogEntry(
         "MG/SPN",
         (
-            ServiceCenter("CGE", "MG - CONTAGEM"),
-            ServiceCenter("CVH", "MG - CONSELHEIRO LAFAIETE"),
-            ServiceCenter("RAO", "SP - RIBEIRÃO PRETO"),
-            ServiceCenter("RBP", "SP - RIBEIRÃO PRETO"),
+            ServiceCenter("CGE", "MG - Contagem", "CGE — MG - Contagem"),
+            ServiceCenter("CVH", "MG - Contagem", "CHV — MG - Contagem"),
+            ServiceCenter("RAO", "SP - Ribeirão Preto", "RAO — SP - Ribeirão Preto"),
+            ServiceCenter("RBP", "SP - Ribeirão Preto", "RBP — SP - Ribeirão Preto"),
         ),
     ),
     RegionalCatalogEntry(

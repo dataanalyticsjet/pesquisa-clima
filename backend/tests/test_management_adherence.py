@@ -366,6 +366,36 @@ def test_single_base_regional_displays_its_exact_operational_count(monkeypatch):
     assert pr["bases"][0]["response_count"] == 2
 
 
+def test_mg_spn_names_are_consistent_in_adherence_api_and_excel(monkeypatch):
+    configure_request(monkeypatch, total=0)
+
+    payload = client.get("/api/management/surveys/CLIMATE_2026/adherence").json()
+    mg_spn = next(row for row in payload["regionals"] if row["regional_code"] == "MG/SPN")
+    api_bases = {base["base_code"]: base for base in mg_spn["bases"]}
+    expected = {
+        "CGE": "CGE — MG - Contagem",
+        "CVH": "CHV — MG - Contagem",
+        "RAO": "RAO — SP - Ribeirão Preto",
+        "RBP": "RBP — SP - Ribeirão Preto",
+    }
+
+    assert {code: api_bases[code]["base_name"] for code in expected} == expected
+    assert {code: api_bases[code]["response_count"] for code in expected} == {
+        code: 0 for code in expected
+    }
+
+    response = client.get("/api/management/surveys/CLIMATE_2026/adherence/export?locale=pt")
+    workbook = load_workbook(BytesIO(response.content), data_only=True)
+    base_sheet = workbook["Base"]
+    exported = {
+        base_sheet.cell(row, 2).value: base_sheet.cell(row, 3).value
+        for row in range(2, base_sheet.max_row + 1)
+        if base_sheet.cell(row, 1).value == "MG/SPN"
+    }
+
+    assert {code: exported[code] for code in expected} == expected
+
+
 def test_small_and_complementary_base_counts_are_visible_as_operational_volume(monkeypatch):
     configure_request(
         monkeypatch,

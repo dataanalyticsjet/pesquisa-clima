@@ -153,6 +153,22 @@ def test_catalog_formats_display_name_and_does_not_invent_cnpj():
     assert OrganizationCatalogService().validate_selection("ORG_CNPJ", "invented") is False
 
 
+def test_attention_uses_updated_mg_spn_display_labels_without_changing_codes(monkeypatch):
+    payload = configure_service(monkeypatch)
+
+    mg_spn = find_regional(payload, "MG/SPN")
+
+    assert [
+        (sc["sc_code"], sc["display_name"])
+        for sc in mg_spn["scs"]
+    ] == [
+        ("CGE", "CGE — MG - Contagem"),
+        ("CVH", "CHV — MG - Contagem"),
+        ("RAO", "RAO — SP - Ribeirão Preto"),
+        ("RBP", "RBP — SP - Ribeirão Preto"),
+    ]
+
+
 def test_attention_hides_regional_count_when_a_base_count_is_suppressed(monkeypatch):
     payload = configure_service(
         monkeypatch,
