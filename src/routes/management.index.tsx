@@ -63,18 +63,6 @@ function ManagementOverview() {
   }, [navigate]);
 
   const status = data ? getSurveyStatus(data.survey_status, t) : undefined;
-  const invitedValue = data?.invited_count === null || !data
-    ? t("management.unavailable")
-    : formatInteger.format(data.invited_count);
-  const invitedDetail = data?.invited_population_source_configured
-    ? t("management.invitedConsolidated")
-    : t("management.invitedMissing");
-  const adherenceValue = data?.adherence_percent === null || !data
-    ? t("management.unavailable")
-    : `${formatPercent.format(data.adherence_percent)}%`;
-  const adherenceDetail = data?.adherence_percent === null || !data
-    ? t("management.awaitingInvited")
-    : t("management.invitedParticipation");
   const completedValue = !data
     ? t("management.insufficient")
     : formatInteger.format(data.completed_participations);
@@ -106,9 +94,6 @@ function ManagementOverview() {
       {!loading && data && (
         <>
           <section className="management-metrics management-metrics--overview" aria-label={t("management.metricsAria")}>
-            <MetricCard label={t("management.index")} value={t("management.underDefinition")} detail={t("management.indexApiUnavailable")} />
-            <MetricCard label={t("management.invited")} value={invitedValue} detail={invitedDetail} />
-            <MetricCard label={t("management.adherence")} value={adherenceValue} detail={adherenceDetail} />
             <MetricCard label={t("management.completed")} value={completedValue} detail={completedDetail} />
             <MetricCard label={t("management.anonymous")} value={anonymousValue} detail={anonymousDetail} />
             <MetricCard label={t("management.nps")} value={getNpsValue(data, t, formatPercent)} detail={npsDetail} />
